@@ -18,7 +18,49 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Build commands (Windows-safe)
+
+- `npm run build`: build with increased Node memory (`--max-old-space-size=4096`)
+- `npm run build:safe`: fallback build with higher memory (`--max-old-space-size=6144`)
+
+## Instagram funnel protection
+
+The Instagram funnel routes are protected so they can’t be accessed directly without an entry “pass”:
+
+- **Protected**: `/go`, `/post/*`, `/out/*`
+- **Protected**: `/help/*` (gated help funnel route)
+- **Entry links (use these in Instagram)**:
+  - `/ig/a`
+  - `/ig/b`
+
+When a user opens `/ig/a` or `/ig/b`, the server sets a short‑lived signed cookie and redirects them to `/go`. Without that cookie, funnel routes redirect to `/`.
+
+### Configure the secret (production)
+
+Set an environment variable:
+
+- `IG_FUNNEL_SECRET`: a long random secret used to sign the entry pass.
+- `NEXT_PUBLIC_ADSENSE_CLIENT_ID`: your AdSense client id (for live ad script loading)
+- `NEXT_PUBLIC_SITE_URL`: canonical site URL for sitemap
+- `ANALYTICS_WEBHOOK_URL`: optional webhook endpoint for funnel analytics events
+- `REQUEST_TOOL_WEBHOOK_URL`: optional webhook endpoint for `/request-tool` submissions
+
+## Analytics events (funnel)
+
+Client/server events are sent to `/api/track`, then forwarded to `ANALYTICS_WEBHOOK_URL` when set:
+
+- `ig_entry`
+- `go_page_view`
+- `go_click_full_video`
+- `go_click_instagram`
+- `go_click_download`
+- `out_loader_started`
+- `out_loader_completed`
+- `help_page_view`
+- `help_reveal_shown`
+- `help_click_download`
+- `help_click_link`
+- `help_click_rate`
 
 ## Learn More
 
