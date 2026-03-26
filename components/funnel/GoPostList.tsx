@@ -24,6 +24,8 @@ export function GoPostList({ posts }: { posts: Post[] }) {
     const start = (safePage - 1) * POSTS_PER_PAGE;
     return posts.slice(start, start + POSTS_PER_PAGE);
   }, [posts, safePage]);
+  const startPostNumber = (safePage - 1) * POSTS_PER_PAGE + 1;
+  const endPostNumber = Math.min(safePage * POSTS_PER_PAGE, posts.length);
 
   function shouldShowAdAfterOnCurrentPage(postIndexOnPage: number) {
     if (safePage === 1) return postIndexOnPage % 3 === 0;
@@ -114,6 +116,9 @@ export function GoPostList({ posts }: { posts: Post[] }) {
             Next
           </button>
         </div>
+        <p className="mt-3 text-center text-xs text-zinc-600 sm:text-sm">
+          Showing posts {startPostNumber}-{endPostNumber} on this page. Remaining posts are on the next pages.
+        </p>
         <div className="mt-3 flex flex-wrap justify-center gap-2">
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
             <button

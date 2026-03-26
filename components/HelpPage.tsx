@@ -21,7 +21,9 @@ export function HelpPage({ postId }: Props) {
   const isFunnel = from === "video" || from === "download";
 
   const [showReveal, setShowReveal] = useState(false);
+  const [showFloatingArrow, setShowFloatingArrow] = useState(true);
   const pageRef = useRef<HTMLDivElement>(null);
+  const postLinkCtaRef = useRef<HTMLDivElement>(null);
 
   // Reveal box after user has scrolled through content.
   useEffect(() => {
@@ -60,6 +62,27 @@ export function HelpPage({ postId }: Props) {
       source: from ?? undefined,
     });
   }, [showReveal, isFunnel, postId, from]);
+
+  useEffect(() => {
+    if (!isFunnel) {
+      setShowFloatingArrow(false);
+      return;
+    }
+
+    setShowFloatingArrow(true);
+    const target = postLinkCtaRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setShowFloatingArrow(!entry.isIntersecting);
+      },
+      { threshold: 0.2 }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [isFunnel, showReveal]);
 
   return (
     <div ref={pageRef} className="min-w-0 w-full space-y-6 pb-10">
@@ -118,42 +141,7 @@ export function HelpPage({ postId }: Props) {
 
               {/* Funnel-only scroll sticker right before the inline ad */}
               {isFunnel && idx !== TOOL_SLUGS.length - 1 ? (
-                <div className="space-y-2">
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="text-xs font-semibold uppercase tracking-wider text-amber-800">
-                        Go 👇 for resources link and download
-                      </div>
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        {/* {downloadLink ? (
-                          <a
-                            href={downloadLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() =>
-                              trackEvent({
-                                event: "help_click_download",
-                                path: `/help/${postId}`,
-                                postId,
-                                source: from ?? undefined,
-                                meta: { fromSticker: true },
-                              })
-                            }
-                            className="inline-block -rotate-6 cursor-pointer select-none rounded-md border-2 border-dashed border-red-400 bg-gradient-to-br from-red-50 to-amber-50 px-2.5 py-1 text-center text-[10px] font-black uppercase leading-tight tracking-wide text-red-600 shadow-sm ring-2 ring-red-200/60 transition-transform hover:scale-105 hover:ring-red-300/80 active:scale-95 sm:text-[11px]"
-                            aria-label="Download from here"
-                          >
-                            Download
-                            <br />
-                            from here
-                          </a>
-                        ) : (
-                          <span className="inline-flex select-none items-center justify-center rounded-md bg-zinc-200 px-2.5 py-1 text-[10px] font-semibold uppercase text-zinc-600 sm:text-[11px]">
-                            Download unavailable
-                          </span>
-                        )} */}
-                      </div>
-                    </div>
-                  </div>
+                <div>
                   <AdBox type="inline" />
                 </div>
               ) : null}
@@ -175,7 +163,7 @@ export function HelpPage({ postId }: Props) {
                     <div>view👇</div>
                     <div>&nbsp;</div>
                   </div>
-                  <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-3">
+                  <div ref={postLinkCtaRef} className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-3">
                     {downloadLink ? (
                       <a
                         href={downloadLink}
@@ -245,6 +233,25 @@ export function HelpPage({ postId }: Props) {
       </section>
 
       <AdBox type="box" />
+
+      {isFunnel && showFloatingArrow ? (
+        <div className="pointer-events-none fixed bottom-24 left-1/2 z-50 -translate-x-1/2">
+          <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-amber-500 text-white shadow-lg ring-4 ring-amber-200/70 motion-safe:animate-bounce">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 20 20"
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 8l5 5 5-5" />
+            </svg>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
