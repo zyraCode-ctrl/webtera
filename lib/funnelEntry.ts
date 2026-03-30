@@ -9,7 +9,12 @@ const FUNNEL_TTL_SECONDS = 6 * 60;
 function bytesToBase64Url(bytes: Uint8Array) {
   let bin = "";
   for (const b of bytes) bin += String.fromCharCode(b);
-  const b64 = btoa(bin);
+  // `btoa` is a browser/global in some runtimes, but may be missing in Node on Vercel.
+  // Fall back to `Buffer` to keep the entry link flow working everywhere.
+  const b64 =
+    typeof btoa === "function"
+      ? btoa(bin)
+      : Buffer.from(bin, "binary").toString("base64");
   return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 

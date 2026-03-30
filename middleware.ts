@@ -6,10 +6,21 @@ const COOKIE_NAME = "ig_pass";
 function base64UrlToBytes(input: string) {
   const pad = "=".repeat((4 - (input.length % 4)) % 4);
   const b64 = (input + pad).replace(/-/g, "+").replace(/_/g, "/");
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return bytes;
+  // `atob` is available in many runtimes (browser/edge), but not guaranteed in all Next
+  // middleware execution environments. Fall back to `Buffer` for Node compatibility.
+  if (typeof atob === "function") {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  }
+
+  if (typeof Buffer !== "undefined") {
+    const buf = Buffer.from(b64, "base64");
+    return new Uint8Array(buf);
+  }
+
+  throw new Error("[middleware] No base64 decoder available");
 }
 
 function bytesToBase64Url(bytes: Uint8Array) {
