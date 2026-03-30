@@ -50,7 +50,7 @@ export function GoPostList({ posts }: { posts: Post[] }) {
               Enter post number to search
             </div>
             <div className="mt-3">
-              <AdBox type="inline" />
+              <AdBox type="banner" />
             </div>
             <div className="mt-3">
               <input
@@ -75,7 +75,7 @@ export function GoPostList({ posts }: { posts: Post[] }) {
                     preview={resultPost.preview}
                     igLink={resultPost.igLink}
                   />
-                  <AdBox type="inline" />
+                  <AdBox type="banner" />
                 </div>
               ) : (
                 <p className="text-sm text-zinc-600">
@@ -90,7 +90,9 @@ export function GoPostList({ posts }: { posts: Post[] }) {
       {currentPosts.map((p, idx) => (
         <div key={p.id} className="space-y-4">
           <GoPostCard id={p.id} title={p.title} preview={p.preview} igLink={p.igLink} />
-          {shouldShowAdAfterOnCurrentPage(idx + 1) ? <AdBox type="inline" /> : null}
+          {shouldShowAdAfterOnCurrentPage(idx + 1) ? (
+            <AdBox type="banner" />
+          ) : null}
         </div>
       ))}
 

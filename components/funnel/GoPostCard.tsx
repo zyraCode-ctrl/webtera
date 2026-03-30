@@ -50,11 +50,11 @@ export function GoPostCard({
             }
             className="inline-flex min-h-10 items-center justify-center rounded-lg bg-pink-600 px-3 py-2 text-xs font-medium text-white hover:bg-pink-500"
           >
-            Instagram
+            HD
           </a>
         ) : (
           <span className="inline-flex min-h-10 items-center justify-center rounded-lg bg-zinc-100 px-3 py-2 text-xs font-medium text-zinc-500">
-            Instagram
+            HD
           </span>
         )}
         <Link
