@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { AdBox } from "@/components/AdBox";
 import { StickyBottomAd } from "@/components/StickyBottomAd";
 import { Footer } from "@/components/Footer";
+import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -40,6 +41,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${jetBrainsMono.variable} h-full min-h-dvh min-w-0 w-full max-w-full bg-zinc-50 text-zinc-900 antialiased`}
       >
+        <GoogleAnalytics />
         {process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID && (
           <Script
             async

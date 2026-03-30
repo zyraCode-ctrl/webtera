@@ -6,6 +6,12 @@ export type TrackPayload = {
   meta?: Record<string, string | number | boolean | null>;
 };
 
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void;
+  }
+}
+
 function getSessionId() {
   try {
     const key = "wt_analytics_sid_v1";
@@ -21,11 +27,26 @@ function getSessionId() {
 
 export function trackEvent(payload: TrackPayload) {
   try {
+    const sessionId = getSessionId();
+    const at = new Date().toISOString();
+    const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+
+    // Send the same events to GA4 so they appear in Realtime and Events.
+    if (typeof window !== "undefined" && typeof window.gtag === "function") {
+      window.gtag("event", payload.event, {
+        page_path: payload.path,
+        source: payload.source,
+        post_id: payload.postId,
+        session_id: sessionId,
+        ...payload.meta,
+      });
+    }
+
     const body = JSON.stringify({
       ...payload,
-      sessionId: getSessionId(),
-      at: new Date().toISOString(),
-      ua: typeof navigator !== "undefined" ? navigator.userAgent : "",
+      sessionId,
+      at,
+      ua,
     });
 
     if (typeof navigator !== "undefined" && "sendBeacon" in navigator) {
