@@ -30,10 +30,9 @@ The Instagram funnel routes are protected so they can’t be accessed directly w
 - **Protected**: `/go`, `/post/*`, `/out/*`
 - **Protected**: `/help/*` (gated help funnel route)
 - **Entry links (use these in Instagram)**:
-  - `/ig/a`
-  - `/ig/b`
+  - `/<entry>/<sub>` (2-part links; configured in `app/[entry]/[sub]/route.ts`)
 
-When a user opens `/ig/a` or `/ig/b`, the server sets a short‑lived signed cookie and redirects them to `/go`. Without that cookie, funnel routes redirect to `/`.
+When a user opens a valid entry link, the server sets a short‑lived signed cookie and redirects them to `/go`. Without that cookie, funnel routes redirect to `/`.
 
 ### Configure the secret (production)
 

@@ -3,31 +3,69 @@ import type { NextRequest } from "next/server";
 
 const COOKIE_NAME = "ig_pass";
 
+const BASE64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+const BASE64_LOOKUP = (() => {
+  const out = new Uint16Array(256);
+  out.fill(65535);
+  for (let i = 0; i < BASE64_ALPHABET.length; i++) {
+    out[BASE64_ALPHABET.charCodeAt(i)] = i;
+  }
+  return out;
+})();
+
 function base64UrlToBytes(input: string) {
-  const pad = "=".repeat((4 - (input.length % 4)) % 4);
-  const b64 = (input + pad).replace(/-/g, "+").replace(/_/g, "/");
-  // `atob` is available in many runtimes (browser/edge), but not guaranteed in all Next
-  // middleware execution environments. Fall back to `Buffer` for Node compatibility.
-  if (typeof atob === "function") {
-    const bin = atob(b64);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    return bytes;
+  // Pure JS base64url decoding (no `atob`/`Buffer`).
+  const padLen = (4 - (input.length % 4)) % 4;
+  const base64 = (input + "=".repeat(padLen)).replace(/-/g, "+").replace(/_/g, "/");
+
+  let padding = 0;
+  if (base64.endsWith("==")) padding = 2;
+  else if (base64.endsWith("=")) padding = 1;
+
+  const outLen = (base64.length * 3) / 4 - padding;
+  const out = new Uint8Array(outLen);
+
+  let outIndex = 0;
+  for (let i = 0; i < base64.length; i += 4) {
+    const c0 = base64.charCodeAt(i);
+    const c1 = base64.charCodeAt(i + 1);
+    const c2 = base64.charCodeAt(i + 2);
+    const c3 = base64.charCodeAt(i + 3);
+
+    const v0 = BASE64_LOOKUP[c0];
+    const v1 = BASE64_LOOKUP[c1];
+    const v2 = c2 === 61 /* '=' */ ? 0 : BASE64_LOOKUP[c2];
+    const v3 = c3 === 61 /* '=' */ ? 0 : BASE64_LOOKUP[c3];
+    if (v0 === 65535 || v1 === 65535 || v2 === 65535 || v3 === 65535) {
+      throw new Error("[middleware] Invalid base64 input");
+    }
+
+    const triple = (v0 << 18) | (v1 << 12) | (v2 << 6) | v3;
+    if (outIndex < outLen) out[outIndex++] = (triple >> 16) & 255;
+    if (outIndex < outLen) out[outIndex++] = (triple >> 8) & 255;
+    if (outIndex < outLen) out[outIndex++] = triple & 255;
   }
 
-  if (typeof Buffer !== "undefined") {
-    const buf = Buffer.from(b64, "base64");
-    return new Uint8Array(buf);
-  }
-
-  throw new Error("[middleware] No base64 decoder available");
+  return out;
 }
 
 function bytesToBase64Url(bytes: Uint8Array) {
-  let bin = "";
-  for (const b of bytes) bin += String.fromCharCode(b);
-  const b64 = btoa(bin);
-  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  // Pure JS base64url encoding.
+  let out = "";
+  for (let i = 0; i < bytes.length; i += 3) {
+    const b0 = bytes[i];
+    const has1 = i + 1 < bytes.length;
+    const has2 = i + 2 < bytes.length;
+    const b1 = has1 ? bytes[i + 1] : 0;
+    const b2 = has2 ? bytes[i + 2] : 0;
+
+    const triplet = (b0 << 16) | (b1 << 8) | b2;
+    out += BASE64_ALPHABET[(triplet >> 18) & 63];
+    out += BASE64_ALPHABET[(triplet >> 12) & 63];
+    out += has1 ? BASE64_ALPHABET[(triplet >> 6) & 63] : "=";
+    out += has2 ? BASE64_ALPHABET[triplet & 63] : "=";
+  }
+  return out.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
 async function hmacSha256(secret: string, data: string) {

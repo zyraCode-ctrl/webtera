@@ -6,16 +6,26 @@ import { getRequiredEnv } from "@/lib/env";
 const COOKIE_NAME = "ig_pass";
 const FUNNEL_TTL_SECONDS = 6 * 60;
 
+const BASE64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
 function bytesToBase64Url(bytes: Uint8Array) {
-  let bin = "";
-  for (const b of bytes) bin += String.fromCharCode(b);
-  // `btoa` is a browser/global in some runtimes, but may be missing in Node on Vercel.
-  // Fall back to `Buffer` to keep the entry link flow working everywhere.
-  const b64 =
-    typeof btoa === "function"
-      ? btoa(bin)
-      : Buffer.from(bin, "binary").toString("base64");
-  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  // Pure JS base64url encoding so this works in all Vercel runtimes
+  // (Edge may not provide `btoa` and `Buffer`).
+  let out = "";
+  for (let i = 0; i < bytes.length; i += 3) {
+    const b0 = bytes[i];
+    const has1 = i + 1 < bytes.length;
+    const has2 = i + 2 < bytes.length;
+    const b1 = has1 ? bytes[i + 1] : 0;
+    const b2 = has2 ? bytes[i + 2] : 0;
+
+    const triplet = (b0 << 16) | (b1 << 8) | b2;
+    out += BASE64_ALPHABET[(triplet >> 18) & 63];
+    out += BASE64_ALPHABET[(triplet >> 12) & 63];
+    out += has1 ? BASE64_ALPHABET[(triplet >> 6) & 63] : "=";
+    out += has2 ? BASE64_ALPHABET[triplet & 63] : "=";
+  }
+  return out.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
 async function hmacSha256(secret: string, data: string) {
