@@ -39,7 +39,14 @@ When a user opens a valid entry link, the server sets a short‑lived signed coo
 Set an environment variable:
 
 - `IG_FUNNEL_SECRET`: a long random secret used to sign the entry pass.
-- `NEXT_PUBLIC_ADSENSE_CLIENT_ID`: your AdSense client id (for live ad script loading)
+- **Adsterra:** `AdBox` maps four standard sizes (set **either** script URLs **or** invoke JSON per slot):
+  - **728×90** — `type="banner"` → `NEXT_PUBLIC_ADSTERRA_SCRIPT_BANNER` or `NEXT_PUBLIC_ADSTERRA_INVOKE_BANNER`
+  - **320×50** — `type="bannerMobile"` (sticky bar) → `NEXT_PUBLIC_ADSTERRA_SCRIPT_BANNER_MOBILE` or `NEXT_PUBLIC_ADSTERRA_INVOKE_BANNER_MOBILE`
+  - **300×250** — `type="inline"` → `NEXT_PUBLIC_ADSTERRA_SCRIPT_INLINE` or `NEXT_PUBLIC_ADSTERRA_INVOKE_INLINE`
+  - **160×600** — `type="box"` → `NEXT_PUBLIC_ADSTERRA_SCRIPT_BOX` or `NEXT_PUBLIC_ADSTERRA_INVOKE_BOX`
+  - Invoke JSON example: `'{"key":"YOUR_KEY","width":728,"height":90}'` (use single quotes around JSON in `.env` if needed)
+  - `NEXT_PUBLIC_ADSTERRA_INVOKE_BASE` — origin of `invoke.js` (e.g. `https://glamournakedemployee.com`); paths are `{base}/{key}/invoke.js`
+- `NEXT_PUBLIC_GA_MEASUREMENT_ID`: GA4 id for analytics (`G-…`).
 - `NEXT_PUBLIC_SITE_URL`: canonical site URL for sitemap
 - `ANALYTICS_WEBHOOK_URL`: optional webhook endpoint for funnel analytics events
 - `REQUEST_TOOL_WEBHOOK_URL`: optional webhook endpoint for `/request-tool` submissions

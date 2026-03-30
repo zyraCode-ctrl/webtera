@@ -6,12 +6,12 @@ const nextConfig = {
       "base-uri 'self'",
       "frame-ancestors 'none'",
       "object-src 'none'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://www.googletagmanager.com https://*.googlesyndication.com https://*.doubleclick.net",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://*.googletagmanager.com https://www.google-analytics.com https://www.highperformanceformat.com https://*.highperformanceformat.com https://www.effectivecreativeformat.com https://*.effectivecreativeformat.com https://www.profitablecreativeformat.com https://*.profitablecreativeformat.com https://*.prosperate.ai https://glamournakedemployee.com https://*.glamournakedemployee.com",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
       "connect-src 'self' https:",
-      "frame-src https://*.doubleclick.net https://*.googlesyndication.com",
+      "frame-src https: https://*.doubleclick.net https://*.googlesyndication.com",
     ].join("; ");
 
     return [

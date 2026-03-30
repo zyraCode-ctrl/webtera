@@ -27,7 +27,7 @@ export function StickyBottomAd() {
     <div className="fixed inset-x-0 bottom-0 z-50 w-full min-w-0 border-t border-zinc-200 bg-white/95 px-3 py-2 backdrop-blur sm:px-4">
       <div className="mx-auto flex w-full min-w-0 max-w-[1400px] items-start gap-2">
         <div className="min-w-0 flex-1">
-          <AdBox type="banner" className="h-14 sm:h-16" />
+          <AdBox type="bannerMobile" className="h-[50px]" />
         </div>
         <button
           type="button"
