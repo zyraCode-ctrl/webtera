@@ -7,7 +7,6 @@ type ServerEvent = {
   meta?: Record<string, unknown>;
 };
 
-import { getRequiredEnv } from "@/lib/env";
 import { postJsonWithTimeout } from "@/lib/http";
 
 export async function sendServerEvent(evt: ServerEvent) {
@@ -16,11 +15,10 @@ export async function sendServerEvent(evt: ServerEvent) {
     at: evt.at ?? new Date().toISOString(),
   };
 
-  const webhook =
-    process.env.NODE_ENV === "production"
-      ? getRequiredEnv("ANALYTICS_WEBHOOK_URL")
-      : process.env.ANALYTICS_WEBHOOK_URL;
-  if (!webhook) return { ok: true as const };
+  // Keep analytics webhook optional in production.
+  // Without this, funnel entry links can crash with HTTP 500 on Vercel.
+  const webhook = process.env.ANALYTICS_WEBHOOK_URL;
+  if (!webhook || !webhook.trim()) return { ok: true as const };
 
   try {
     await postJsonWithTimeout(webhook, payload, 5000);
