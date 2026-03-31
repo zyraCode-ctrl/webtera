@@ -15,25 +15,31 @@
 // ─────────────────────────────────────────────
 // Per-post main link (shown as "Link" button)
 // ─────────────────────────────────────────────
+const defaultPostLinks: Record<string, string> = Object.fromEntries(
+  Array.from({ length: 50 }, (_, i) => {
+    const id = String(i + 1);
+    return [id, `https://example.com/link/post-${id}`];
+  })
+);
+
 export const postLinks: Record<string, string> = {
-  ...Object.fromEntries(
-    Array.from({ length: 50 }, (_, i) => {
-      const id = String(i + 1);
-      return [id, `https://example.com/link/post-${id}`];
-    })
-  ),
+  ...defaultPostLinks,
+  "28": "https://www.xvideos.com/embedframe/ouetolhf6c4",
 };
 
 // ─────────────────────────────────────────────
 // Per-post download link (shown as "Download" button)
 // ─────────────────────────────────────────────
+const defaultDownloadLinks: Record<string, string> = Object.fromEntries(
+  Array.from({ length: 50 }, (_, i) => {
+    const id = String(i + 1);
+    return [id, `https://example.com/download/post-${id}`];
+  })
+);
+
 export const downloadLinks: Record<string, string> = {
-  ...Object.fromEntries(
-    Array.from({ length: 50 }, (_, i) => {
-      const id = String(i + 1);
-      return [id, `https://example.com/download/post-${id}`];
-    })
-  ),
+  ...defaultDownloadLinks,
+  "28": "https://www.xvideos.com/embedframe/ouetolhf6c4",
 };
 
 // ─────────────────────────────────────────────
