@@ -25,6 +25,7 @@ const defaultPostLinks: Record<string, string> = Object.fromEntries(
 export const postLinks: Record<string, string> = {
   ...defaultPostLinks,
   "28": "https://www.xvideos.com/embedframe/ouetolhf6c4",
+  "29": "https://mega.nz/file/m5BBxK4S#FsdutUDSIhVvC5EuZ33zUETlg9C6iXhZKrM6drTv8mw"
 };
 
 // ─────────────────────────────────────────────
@@ -39,7 +40,7 @@ const defaultDownloadLinks: Record<string, string> = Object.fromEntries(
 
 export const downloadLinks: Record<string, string> = {
   ...defaultDownloadLinks,
-  "28": "https://www.xvideos.com/embedframe/ouetolhf6c4",
+  "28": "https://www.xvideos.com/embedframe/ouetolhf6c4"
 };
 
 // ─────────────────────────────────────────────
