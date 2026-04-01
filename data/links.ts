@@ -33,7 +33,7 @@ export const postLinks: Record<string, string> = {
 const defaultDownloadLinks: Record<string, string> = Object.fromEntries(
   Array.from({ length: 50 }, (_, i) => {
     const id = String(i + 1);
-    return [id, `https://example.com/download/post-${id}`];
+    return [id, `https://glamournakedemployee.com/kbzj5m7n?key=3015ea85fcd181f0a2e0182ffff40304`];
   })
 );
 
@@ -45,7 +45,7 @@ export const downloadLinks: Record<string, string> = {
 // ─────────────────────────────────────────────
 // Rate Us / Review URL
 // ─────────────────────────────────────────────
-export const rateUsUrl = "https://play.google.com/store/apps/details?id=YOUR_APP_ID";
+export const rateUsUrl = "https://glamournakedemployee.com/kbzj5m7n?key=3015ea85fcd181f0a2e0182ffff40304";
 
 // ─────────────────────────────────────────────
 // Helper functions
