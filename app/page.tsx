@@ -22,7 +22,6 @@ export default function Home() {
             Lightweight utilities that feel like a modern product: quick to load,
             easy to use, and built for mobile from day one.
           </p>
-
           <div className="mx-auto mt-7 flex w-full max-w-md flex-col gap-3 sm:flex-row sm:justify-center">
             <Link
               href="/tools"

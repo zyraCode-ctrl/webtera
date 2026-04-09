@@ -52,6 +52,9 @@ export default function RootLayout({
             </aside>
 
             <main className="min-w-0 w-full max-w-full py-2 pb-32 sm:py-4 sm:pb-36">
+              <p className="mb-4 rounded-md bg-yellow-100 px-3 py-2 text-sm leading-6 text-zinc-800">
+                <b>NOTE: TO ACCESS VIDEO FILES COME HERE FROM CHANNEL LINK.</b>
+              </p>
               {children}
               <Footer />
             </main>
