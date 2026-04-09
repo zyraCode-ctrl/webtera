@@ -16,7 +16,7 @@
 // Per-post main link (shown as "Link" button)
 // ─────────────────────────────────────────────
 const defaultPostLinks: Record<string, string> = Object.fromEntries(
-  Array.from({ length: 50 }, (_, i) => {
+  Array.from({ length: 2000 }, (_, i) => {
     const id = String(i + 1);
     return [id, `https://example.com/link/post-${id}`];
   })
@@ -32,7 +32,7 @@ export const postLinks: Record<string, string> = {
 // Per-post download link (shown as "Download" button)
 // ─────────────────────────────────────────────
 const defaultDownloadLinks: Record<string, string> = Object.fromEntries(
-  Array.from({ length: 50 }, (_, i) => {
+  Array.from({ length: 2000 }, (_, i) => {
     const id = String(i + 1);
     return [id, `https://glamournakedemployee.com/kbzj5m7n?key=3015ea85fcd181f0a2e0182ffff40304`];
   })

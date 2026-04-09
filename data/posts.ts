@@ -35,7 +35,7 @@ const PREVIEW_OPENERS = [
   "Teaser of the before/after; the full video shows how to get there consistently.",
 ];
 
-export const posts: Post[] = Array.from({ length: 50 }, (_, i) => {
+export const posts: Post[] = Array.from({ length: 2000 }, (_, i) => {
   const n = i + 1;
   const id = String(n);
   return {
