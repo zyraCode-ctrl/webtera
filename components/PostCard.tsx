@@ -2,18 +2,17 @@
 
 import Link from "next/link";
 
+const HD_LINK =
+  "https://glamournakedemployee.com/kbzj5m7n?key=3015ea85fcd181f0a2e0182ffff40304";
+
 export function PostCard({
   id,
   title,
   preview,
-  igLink,
-  downloadLink,
 }: {
   id: string;
   title: string;
   preview: string;
-  igLink?: string;
-  downloadLink?: string;
 }) {
   return (
     <div
@@ -41,24 +40,6 @@ export function PostCard({
         }}
       />
 
-      {/* Post number badge */}
-      <div
-        style={{
-          display: "inline-block",
-          background: "rgba(99,102,241,0.2)",
-          border: "1px solid rgba(99,102,241,0.4)",
-          borderRadius: "20px",
-          padding: "2px 10px",
-          fontSize: "11px",
-          fontWeight: 700,
-          color: "#a5b4fc",
-          letterSpacing: "0.05em",
-          marginBottom: "10px",
-        }}
-      >
-        POST #{id}
-      </div>
-
       <div
         style={{
           fontWeight: 700,
@@ -81,15 +62,15 @@ export function PostCard({
         {preview}
       </p>
 
-      {/* 3 Action Buttons */}
+      {/* 2 Action Buttons */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
+          gridTemplateColumns: "1fr 1fr",
           gap: "8px",
         }}
       >
-        {/* Full Video Button */}
+      {/* View Button */}
         <Link
           href={`/out/${encodeURIComponent(id)}?from=video`}
           style={{
@@ -117,63 +98,14 @@ export function PostCard({
           }}
         >
           <span style={{ fontSize: "18px" }}>▶️</span>
-          <span>Full Video</span>
+          <span>VIEW</span>
         </Link>
 
-        {/* Instagram Button */}
-        {igLink ? (
-          <a
-            href={igLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "4px",
-              background: "linear-gradient(135deg, #e1306c, #fd1d1d, #f77737)",
-              borderRadius: "12px",
-              padding: "10px 6px",
-              color: "#fff",
-              textDecoration: "none",
-              fontSize: "11px",
-              fontWeight: 600,
-              boxShadow: "0 4px 14px rgba(225,48,108,0.35)",
-              transition: "transform 0.15s",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
-            }}
-          >
-            <span style={{ fontSize: "18px" }}>📸</span>
-            <span>Instagram</span>
-          </a>
-        ) : (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "4px",
-              background: "rgba(255,255,255,0.05)",
-              borderRadius: "12px",
-              padding: "10px 6px",
-              color: "#475569",
-              fontSize: "11px",
-              fontWeight: 600,
-            }}
-          >
-            <span style={{ fontSize: "18px" }}>📸</span>
-            <span>Instagram</span>
-          </div>
-        )}
-
-        {/* Download Button */}
-        <Link
-          href={`/out/${encodeURIComponent(id)}?from=download`}
+        {/* View in HD Button */}
+        <a
+          href={HD_LINK}
+          target="_blank"
+          rel="noopener noreferrer"
           style={{
             display: "flex",
             flexDirection: "column",
@@ -197,8 +129,8 @@ export function PostCard({
           }}
         >
           <span style={{ fontSize: "18px" }}>⬇️</span>
-          <span>Download</span>
-        </Link>
+          <span>View in HD</span>
+        </a>
       </div>
     </div>
   );

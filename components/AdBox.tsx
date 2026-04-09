@@ -3,7 +3,6 @@
 import { useEffect, useId, useMemo, useRef } from "react";
 import Script from "next/script";
 
-/** banner = 728×90, bannerMobile = 320×50, inline = 300×250, box = 160×600 (typical Adsterra mapping) */
 export type AdBoxType = "banner" | "bannerMobile" | "box" | "inline";
 
 type InvokeConfig = { key: string; width: number; height: number };
@@ -33,11 +32,11 @@ function parseInvoke(raw: string | undefined): InvokeConfig | null {
 function envScriptForType(type: AdBoxType): string | undefined {
   const v =
     type === "banner"
-      ? process.env.NEXT_PUBLIC_ADSTERRA_SCRIPT_BANNER
+      ? process.env.NEXT_PUBLIC_ADSTERRA_INVOKE_BANNER
       : type === "bannerMobile"
-        ? process.env.NEXT_PUBLIC_ADSTERRA_SCRIPT_BANNER_MOBILE
+        ? process.env.NEXT_PUBLIC_ADSTERRA_INVOKE_BANNER_MOBILE
         : type === "inline"
-          ? process.env.NEXT_PUBLIC_ADSTERRA_SCRIPT_INLINE
+          ? process.env.NEXT_PUBLIC_ADSTERRA_INVOKE_INLINE
           : process.env.NEXT_PUBLIC_ADSTERRA_SCRIPT_BOX;
   const t = v?.trim();
   return t || undefined;
@@ -53,6 +52,18 @@ function envInvokeForType(type: AdBoxType): InvokeConfig | null {
           ? process.env.NEXT_PUBLIC_ADSTERRA_INVOKE_INLINE
           : process.env.NEXT_PUBLIC_ADSTERRA_INVOKE_BOX;
   return parseInvoke(raw);
+}
+
+function resolveScriptSrc(type: AdBoxType): string | undefined {
+  // Keep sidebar box ads on their dedicated zone (typically 160x600).
+  if (type === "box") return envScriptForType("box") ?? envScriptForType("banner");
+  return envScriptForType(type) ?? envScriptForType("banner");
+}
+
+function resolveInvoke(type: AdBoxType): InvokeConfig | null {
+  // Keep sidebar box ads on their dedicated zone (typically 160x600).
+  if (type === "box") return envInvokeForType("box") ?? envInvokeForType("banner");
+  return envInvokeForType(type) ?? envInvokeForType("banner");
 }
 
 function invokeBaseUrl(): string {
@@ -78,7 +89,22 @@ function queueInvokeLoad(invoke: InvokeConfig, container: HTMLElement | null) {
         const s = document.createElement("script");
         s.src = `${invokeBaseUrl()}/${invoke.key}/invoke.js`;
         s.async = true;
-        const done = () => resolve();
+        let retried = false;
+        const done = () => {
+          // Retry once if provider script loaded but ad iframe did not render.
+          const hasRenderedAd = !!container.querySelector("iframe");
+          if (!hasRenderedAd && !retried) {
+            retried = true;
+            const retry = document.createElement("script");
+            retry.src = s.src;
+            retry.async = true;
+            retry.onload = () => resolve();
+            retry.onerror = () => resolve();
+            container.appendChild(retry);
+            return;
+          }
+          resolve();
+        };
         s.onload = done;
         s.onerror = done;
         container.appendChild(s);
@@ -93,8 +119,8 @@ export function AdBox({
   type?: AdBoxType;
   className?: string;
 }) {
-  const scriptSrc = useMemo(() => envScriptForType(type), [type]);
-  const invoke = useMemo(() => envInvokeForType(type), [type]);
+  const scriptSrc = useMemo(() => resolveScriptSrc(type), [type]);
+  const invoke = useMemo(() => resolveInvoke(type), [type]);
   const reactId = useId();
   const domId = useMemo(() => `adsterra-${reactId.replace(/:/g, "")}`, [reactId]);
   const mounted = useRef(false);
@@ -115,6 +141,7 @@ export function AdBox({
     if (!invoke || mounted.current) return;
     mounted.current = true;
     const el = document.getElementById(domId);
+    if (el) el.innerHTML = "";
     queueInvokeLoad(invoke, el);
   }, [invoke, domId]);
 

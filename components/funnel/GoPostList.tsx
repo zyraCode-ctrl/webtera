@@ -28,9 +28,8 @@ export function GoPostList({ posts }: { posts: Post[] }) {
   const endPostNumber = Math.min(safePage * POSTS_PER_PAGE, posts.length);
 
   function shouldShowAdAfterOnCurrentPage(postIndexOnPage: number) {
-    if (safePage === 1) return postIndexOnPage % 3 === 0;
-    if (safePage === 2) return postIndexOnPage % 2 === 0;
-    return true;
+    // Keep spacing consistent to improve fill stability and avoid overserving.
+    return postIndexOnPage % 3 === 0;
   }
 
   function goToPage(page: number) {
@@ -73,7 +72,6 @@ export function GoPostList({ posts }: { posts: Post[] }) {
                     id={resultPost.id}
                     title={resultPost.title}
                     preview={resultPost.preview}
-                    igLink={resultPost.igLink}
                   />
                   <AdBox type="banner" />
                 </div>
@@ -89,7 +87,7 @@ export function GoPostList({ posts }: { posts: Post[] }) {
 
       {currentPosts.map((p, idx) => (
         <div key={p.id} className="space-y-4">
-          <GoPostCard id={p.id} title={p.title} preview={p.preview} igLink={p.igLink} />
+          <GoPostCard id={p.id} title={p.title} preview={p.preview} />
           {shouldShowAdAfterOnCurrentPage(idx + 1) ? (
             <AdBox type="banner" />
           ) : null}
