@@ -2,10 +2,6 @@ import { notFound } from "next/navigation";
 import { getPostById, posts } from "@/data/posts";
 import { LinkLoader } from "@/components/LinkLoader";
 
-export function generateStaticParams() {
-  return posts.map((p) => ({ id: p.id }));
-}
-
 export const metadata = {
   title: "Almost there",
   robots: { index: false, follow: false },

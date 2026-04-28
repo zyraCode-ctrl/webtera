@@ -1,11 +1,10 @@
 const REQUIRED_PROD_ENV = [
   "IG_FUNNEL_SECRET",
-  "NEXT_PUBLIC_SITE_URL",
-  "ANALYTICS_WEBHOOK_URL",
   "REQUEST_TOOL_WEBHOOK_URL",
 ] as const;
 
 type RequiredProdEnv = (typeof REQUIRED_PROD_ENV)[number];
+let hasWarnedForMissingEnv = false;
 
 export function getRequiredEnv(name: RequiredProdEnv): string {
   const value = process.env[name];
@@ -17,5 +16,18 @@ export function getRequiredEnv(name: RequiredProdEnv): string {
 
 export function validateProductionEnv() {
   if (process.env.NODE_ENV !== "production") return;
-  for (const name of REQUIRED_PROD_ENV) getRequiredEnv(name);
+  const missing = REQUIRED_PROD_ENV.filter((name) => {
+    const value = process.env[name];
+    return !value || !value.trim();
+  });
+  if (missing.length === 0) return;
+
+  const message = `[env] Missing recommended production environment variables: ${missing.join(", ")}`;
+  if (process.env.STRICT_ENV_VALIDATION === "1") {
+    throw new Error(message);
+  }
+  if (!hasWarnedForMissingEnv) {
+    console.warn(message);
+    hasWarnedForMissingEnv = true;
+  }
 }

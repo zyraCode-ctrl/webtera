@@ -6,6 +6,9 @@ import { AdBox } from "@/components/AdBox";
 import { StickyBottomAd } from "@/components/StickyBottomAd";
 import { Footer } from "@/components/Footer";
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
+import { validateProductionEnv } from "@/lib/env";
+
+validateProductionEnv();
 
 const inter = Inter({
   variable: "--font-sans",

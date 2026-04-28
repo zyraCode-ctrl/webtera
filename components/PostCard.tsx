@@ -1,9 +1,7 @@
 "use client";
 
 import Link from "next/link";
-
-const HD_LINK =
-  "https://glamournakedemployee.com/kbzj5m7n?key=3015ea85fcd181f0a2e0182ffff40304";
+import { funnelHdUrl } from "@/lib/funnelConfig";
 
 export function PostCard({
   id,
@@ -103,7 +101,7 @@ export function PostCard({
 
         {/* View in HD Button */}
         <a
-          href={HD_LINK}
+          href={funnelHdUrl}
           target="_blank"
           rel="noopener noreferrer"
           style={{

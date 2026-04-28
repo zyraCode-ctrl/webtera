@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { sendServerEvent } from "@/lib/serverAnalytics";
 import { getRequiredEnv } from "@/lib/env";
+import { EVENTS } from "@/lib/events";
 
 const COOKIE_NAME = "ig_pass";
 const FUNNEL_TTL_SECONDS = 6 * 60;
@@ -83,7 +84,7 @@ export async function issueFunnelAccess(
   });
 
   const analyticsResult = await sendServerEvent({
-    event: "ig_entry",
+    event: EVENTS.igEntry,
     source: src,
     path: analyticsPath,
   });

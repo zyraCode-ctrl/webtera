@@ -9,11 +9,13 @@
     "build": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next build",
     "build:safe": "node --max-old-space-size=6144 ./node_modules/next/dist/bin/next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "tsx --test tests/**/*.test.ts"
   },
   "dependencies": {
     "@types/marked": "^5.0.2",
     "@types/qrcode": "^1.5.6",
+    "@upstash/redis": "^1.37.0",
     "marked": "^17.0.4",
     "next": "14.2.25",
     "qrcode": "^1.5.4",
@@ -30,6 +32,7 @@
     "eslint": "^8.57.1",
     "eslint-config-next": "14.2.25",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

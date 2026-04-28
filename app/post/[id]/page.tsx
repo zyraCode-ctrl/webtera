@@ -4,10 +4,6 @@ import { AdBox } from "@/components/AdBox";
 import { PostCard } from "@/components/PostCard";
 import { getPostById, posts } from "@/data/posts";
 
-export function generateStaticParams() {
-  return posts.map((p) => ({ id: p.id }));
-}
-
 export function generateMetadata({ params }: { params: { id: string } }) {
   const post = getPostById(params.id);
   if (!post) return { title: "Post" };

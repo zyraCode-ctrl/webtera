@@ -39,7 +39,7 @@ function parseAndValidate(body: unknown): RequestToolPayload | null {
 export async function POST(req: Request) {
   try {
     const key = `request_tool:${getRateLimitKey(req)}`;
-    const rl = checkRateLimit(key, 12, 60_000);
+    const rl = await checkRateLimit(key, 12, 60_000);
     if (!rl.ok) {
       return NextResponse.json(
         { ok: false, error: "rate_limited" },

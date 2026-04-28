@@ -3,11 +3,8 @@
 import Link from "next/link";
 import type { MouseEvent } from "react";
 import { trackEvent } from "@/lib/analytics";
-
-const HD_LINK =
-  "https://glamournakedemployee.com/kbzj5m7n?key=3015ea85fcd181f0a2e0182ffff40304";
-const VIEW_GATE_AD_URL =
-  "https://glamournakedemployee.com/kbzj5m7n?key=3015ea85fcd181f0a2e0182ffff40304";
+import { funnelGateUrl, funnelHdUrl } from "@/lib/funnelConfig";
+import { EVENTS } from "@/lib/events";
 
 export function GoPostCard({
   id,
@@ -26,7 +23,7 @@ export function GoPostCard({
 
     // Always gate: open ad URL first, then redirect current tab to target.
     try {
-      window.open(VIEW_GATE_AD_URL, "_blank", "noopener,noreferrer");
+      window.open(funnelGateUrl, "_blank", "noopener,noreferrer");
     } catch {
       // Ignore popup/open failures and continue to target.
     }
@@ -46,7 +43,7 @@ export function GoPostCard({
           href={fullVideoHref}
           onClick={(e) => {
             trackEvent({
-              event: "go_click_full_video",
+              event: EVENTS.goClickFullVideo,
               path: "/go",
               postId: id,
             });
@@ -57,12 +54,12 @@ export function GoPostCard({
           Full Video
         </Link>
         <a
-          href={HD_LINK}
+          href={funnelHdUrl}
           target="_blank"
           rel="noopener noreferrer"
           onClick={() =>
             trackEvent({
-              event: "go_click_hd",
+              event: EVENTS.goClickHd,
               path: "/go",
               postId: id,
             })

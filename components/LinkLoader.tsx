@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdBox } from "@/components/AdBox";
 import { trackEvent } from "@/lib/analytics";
+import { EVENTS } from "@/lib/events";
 
 const DURATION = 6; // seconds
 
@@ -19,7 +20,7 @@ export function LinkLoader({
 
   useEffect(() => {
     trackEvent({
-      event: "out_loader_started",
+      event: EVENTS.outLoaderStarted,
       path: `/out/${postId}`,
       postId,
       source: from,
@@ -29,7 +30,7 @@ export function LinkLoader({
   useEffect(() => {
     if (seconds <= 0) {
       trackEvent({
-        event: "out_loader_completed",
+        event: EVENTS.outLoaderCompleted,
         path: `/out/${postId}`,
         postId,
         source: from,

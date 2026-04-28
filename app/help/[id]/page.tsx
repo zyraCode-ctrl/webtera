@@ -3,10 +3,6 @@ import { posts } from "@/data/posts";
 import { HelpPage } from "@/components/HelpPage";
 import { Suspense } from "react";
 
-export function generateStaticParams() {
-  return posts.map((p) => ({ id: p.id }));
-}
-
 export function generateMetadata({ params }: { params: { id: string } }) {
   return {
     title: `Help – Post #${params.id}`,

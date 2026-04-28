@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AdBox } from "@/components/AdBox";
 import { trackEvent } from "@/lib/analytics";
 import { TrackPageView } from "@/components/analytics/TrackPageView";
+import { EVENTS } from "@/lib/events";
 
 export default function RequestToolPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -16,7 +17,7 @@ export default function RequestToolPage() {
 
   return (
     <div className="min-w-0 w-full space-y-6">
-      <TrackPageView event="request_tool_page_view" path="/request-tool" />
+      <TrackPageView event={EVENTS.requestToolPageView} path="/request-tool" />
       <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
         <span className="inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-700">
           Community
@@ -63,7 +64,7 @@ export default function RequestToolPage() {
               }
               setSubmitted(true);
               trackEvent({
-                event: "request_tool_submitted",
+                event: EVENTS.requestToolSubmitted,
                 path: "/request-tool",
                 meta: { toolName },
               });

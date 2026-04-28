@@ -22,6 +22,7 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 - `npm run build`: build with increased Node memory (`--max-old-space-size=4096`)
 - `npm run build:safe`: fallback build with higher memory (`--max-old-space-size=6144`)
+- `npm run test`: run baseline TypeScript tests (security/link sanitization checks)
 
 ## Instagram funnel protection
 
@@ -50,6 +51,12 @@ Set an environment variable:
 - `NEXT_PUBLIC_SITE_URL`: canonical site URL for sitemap
 - `ANALYTICS_WEBHOOK_URL`: optional webhook endpoint for funnel analytics events
 - `REQUEST_TOOL_WEBHOOK_URL`: optional webhook endpoint for `/request-tool` submissions
+- `NEXT_PUBLIC_FUNNEL_DEFAULT_EXTERNAL_URL`: optional default external URL fallback for funnel actions
+- `NEXT_PUBLIC_FUNNEL_GATE_URL`: optional URL opened as gate before sending users to target content
+- `NEXT_PUBLIC_FUNNEL_HD_URL`: optional default URL for "View in HD" actions and default downloads
+- `NEXT_PUBLIC_FUNNEL_RATE_URL`: optional URL for the "Rate Us" action
+- `NEXT_PUBLIC_ALLOWED_OUTBOUND_HOSTS`: optional comma-separated host allowlist for `getPostLink`/`getDownloadLink` (example: `mega.nz,xvideos.com,pub-ff1f131c0a954a2ca3d1dfea676addb8.r2.dev`)
+- `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`: optional shared rate-limit backend for API routes (falls back to in-memory when unset)
 
 ## Analytics events (funnel)
 
@@ -59,7 +66,7 @@ Client/server events are sent to `/api/track`, then forwarded to `ANALYTICS_WEBH
 - `go_page_view`
 - `go_click_full_video`
 - `go_click_instagram`
-- `go_click_download`
+- `go_click_hd`
 - `out_loader_started`
 - `out_loader_completed`
 - `help_page_view`

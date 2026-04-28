@@ -42,7 +42,7 @@ function sanitizeMeta(meta: unknown): Record<string, unknown> | undefined {
 export async function POST(req: Request) {
   try {
     const key = `track:${getRateLimitKey(req)}`;
-    const rl = checkRateLimit(key, 60, 60_000);
+    const rl = await checkRateLimit(key, 60, 60_000);
     if (!rl.ok) {
       return NextResponse.json(
         { ok: false, error: "rate_limited" },

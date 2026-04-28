@@ -2,6 +2,7 @@ import { AdBox } from "@/components/AdBox";
 import { TrackPageView } from "@/components/analytics/TrackPageView";
 import { GoPostList } from "@/components/funnel/GoPostList";
 import { posts } from "@/data/posts";
+import { EVENTS } from "@/lib/events";
 
 export const metadata = {
   title: "Posts",
@@ -14,7 +15,7 @@ export const metadata = {
 export default function GoPage() {
   return (
     <div className="min-w-0 w-full space-y-6">
-      <TrackPageView event="go_page_view" path="/go" />
+      <TrackPageView event={EVENTS.goPageView} path="/go" />
       <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
         <span className="inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-700">
           POST LIST

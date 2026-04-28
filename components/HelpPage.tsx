@@ -6,8 +6,10 @@ import { useSearchParams } from "next/navigation";
 import { AdBox } from "@/components/AdBox";
 import { toolContent } from "@/data/toolContent";
 import { tools } from "@/data/tools";
-import { getPostLink, getDownloadLink, rateUsUrl } from "@/data/links";
+import { getPostLinkStatus, getDownloadLinkStatus, rateUsUrl } from "@/data/links";
 import { trackEvent } from "@/lib/analytics";
+import { funnelGateUrl } from "@/lib/funnelConfig";
+import { EVENTS } from "@/lib/events";
 
 type Props = { postId: string };
 type GuideStage = "top" | "near" | "reached";
@@ -18,8 +20,6 @@ const TOOL_SLUGS = Object.keys(toolContent) as Array<keyof typeof toolContent>;
 const CTA_TOOL_INDEX = 5;
 
 export function HelpPage({ postId }: Props) {
-  const LINK_GATE_AD_URL =
-    "https://glamournakedemployee.com/kbzj5m7n?key=3015ea85fcd181f0a2e0182ffff40304";
   const searchParams = useSearchParams();
   const from = searchParams.get("from");
   const isFunnel = from === "video" || from === "download";
@@ -47,8 +47,10 @@ export function HelpPage({ postId }: Props) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const postLink = getPostLink(postId);
-  const downloadLink = getDownloadLink(postId);
+  const postLinkStatus = getPostLinkStatus(postId);
+  const downloadLinkStatus = getDownloadLinkStatus(postId);
+  const postLink = postLinkStatus.url;
+  const downloadLink = downloadLinkStatus.url;
 
   function handlePostLinkClick(e: MouseEvent<HTMLAnchorElement>) {
     if (!postLink) return;
@@ -57,7 +59,7 @@ export function HelpPage({ postId }: Props) {
 
     // Always gate: open ad URL first, then redirect current tab to the target link.
     try {
-      window.open(LINK_GATE_AD_URL, "_blank", "noopener,noreferrer");
+      window.open(funnelGateUrl, "_blank", "noopener,noreferrer");
     } catch {
       // If blocked/failed, still redirect to the real post link.
     }
@@ -67,7 +69,7 @@ export function HelpPage({ postId }: Props) {
 
   useEffect(() => {
     trackEvent({
-      event: "help_page_view",
+      event: EVENTS.helpPageView,
       path: `/help/${postId}`,
       postId,
       source: from ?? undefined,
@@ -77,7 +79,7 @@ export function HelpPage({ postId }: Props) {
   useEffect(() => {
     if (!showReveal || !isFunnel) return;
     trackEvent({
-      event: "help_reveal_shown",
+      event: EVENTS.helpRevealShown,
       path: `/help/${postId}`,
       postId,
       source: from ?? undefined,
@@ -266,7 +268,7 @@ export function HelpPage({ postId }: Props) {
                         rel="noopener noreferrer"
                         onClick={() =>
                           trackEvent({
-                            event: "help_click_download",
+                            event: EVENTS.helpClickDownload,
                             path: `/help/${postId}`,
                             postId,
                             source: from ?? undefined,
@@ -278,7 +280,7 @@ export function HelpPage({ postId }: Props) {
                       </a>
                     ) : (
                       <span className="inline-flex min-h-11 items-center justify-center rounded-lg bg-zinc-200 px-4 py-3 text-sm font-medium text-zinc-600">
-                        No Download
+                        {downloadLinkStatus.blocked ? "Blocked (unsafe link)" : "No Download"}
                       </span>
                     )}
                     {postLink ? (
@@ -287,7 +289,7 @@ export function HelpPage({ postId }: Props) {
                         rel="noopener noreferrer"
                         onClick={(e) => {
                           trackEvent({
-                            event: "help_click_link",
+                            event: EVENTS.helpClickLink,
                             path: `/help/${postId}`,
                             postId,
                             source: from ?? undefined,
@@ -300,7 +302,7 @@ export function HelpPage({ postId }: Props) {
                       </a>
                     ) : (
                       <span className="inline-flex min-h-11 items-center justify-center rounded-lg bg-zinc-200 px-4 py-3 text-sm font-medium text-zinc-600">
-                        No Link
+                        {postLinkStatus.blocked ? "Blocked (unsafe link)" : "No Link"}
                       </span>
                     )}
                     <a
@@ -309,7 +311,7 @@ export function HelpPage({ postId }: Props) {
                       rel="noopener noreferrer"
                       onClick={() =>
                         trackEvent({
-                          event: "help_click_rate",
+                          event: EVENTS.helpClickRate,
                           path: `/help/${postId}`,
                           postId,
                           source: from ?? undefined,

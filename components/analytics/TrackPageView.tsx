@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { trackEvent } from "@/lib/analytics";
+import type { EventName } from "@/lib/events";
 
 export function TrackPageView({
   event,
@@ -9,7 +10,7 @@ export function TrackPageView({
   postId,
   source,
 }: {
-  event: string;
+  event: EventName;
   path: string;
   postId?: string;
   source?: string;
