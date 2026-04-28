@@ -2,6 +2,7 @@ export type Post = {
   id: string;
   title: string;
   preview: string;
+  imageUrl: string;
   videoLink: string;
   igLink?: string;
   downloadLink?: string;
@@ -42,11 +43,21 @@ export const posts: Post[] = Array.from({ length: 2000 }, (_, i) => {
     id,
     title: `Post ${n}: ${TITLE_SUFFIXES[i % TITLE_SUFFIXES.length]}`,
     preview: PREVIEW_OPENERS[i % PREVIEW_OPENERS.length],
+    imageUrl: `https://picsum.photos/seed/webtera-post-${n}/640/360`,
     videoLink: `https://example.com/video/${n}`,
     igLink: `https://www.instagram.com/p/example${n}/`,
     downloadLink: `https://example.com/download/${n}`,
   };
 });
+
+const POST_IMAGE_OVERRIDES: Record<string, string> = {
+  "32": "https://pub-ff1f131c0a954a2ca3d1dfea676addb8.r2.dev/video/Untitled%20design%20(3).png",
+};
+
+for (const post of posts) {
+  const override = POST_IMAGE_OVERRIDES[post.id];
+  if (override) post.imageUrl = override;
+}
 
 export function getPostById(id: string) {
   return posts.find((p) => p.id === id);

@@ -72,6 +72,7 @@ export function GoPostList({ posts }: { posts: Post[] }) {
                     id={resultPost.id}
                     title={resultPost.title}
                     preview={resultPost.preview}
+                    imageUrl={resultPost.imageUrl}
                   />
                   <AdSlot type="banner" variant="topBanner" />
                 </div>
@@ -87,7 +88,7 @@ export function GoPostList({ posts }: { posts: Post[] }) {
 
       {currentPosts.map((p, idx) => (
         <div key={p.id} className="space-y-4">
-          <GoPostCard id={p.id} title={p.title} preview={p.preview} />
+          <GoPostCard id={p.id} title={p.title} preview={p.preview} imageUrl={p.imageUrl} />
           {shouldShowAdAfterOnCurrentPage(idx + 1) ? (
             <AdSlot type="banner" variant="topBanner" />
           ) : null}
