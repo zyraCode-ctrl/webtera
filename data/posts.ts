@@ -51,7 +51,7 @@ export const posts: Post[] = Array.from({ length: 2000 }, (_, i) => {
 });
 
 const POST_IMAGE_OVERRIDES: Record<string, string> = {
-  "32": "https://pub-ff1f131c0a954a2ca3d1dfea676addb8.r2.dev/video/Untitled%20design%20(3).png",
+  "33": "https://pub-ff1f131c0a954a2ca3d1dfea676addb8.r2.dev/video/Untitled%20design%20(3).png",
 };
 
 for (const post of posts) {
