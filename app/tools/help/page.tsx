@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AdBox } from "@/components/AdBox";
+import { AdSlot } from "@/components/AdSlot";
 import { toolContent } from "@/data/toolContent";
 import { tools } from "@/data/tools";
 
@@ -35,7 +35,7 @@ export default function ToolsHelpPage() {
       </section>
 
       {/* Ad directly under hero ("How to Use All Tools") */}
-      <AdBox type="banner" />
+      <AdSlot type="banner" variant="topBanner" />
 
       {/* Jump Navigation */}
       <nav className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
@@ -179,13 +179,13 @@ export default function ToolsHelpPage() {
             </section>
 
             {/* Ad after every tool section */}
-            <AdBox type="inline" className="mt-8" />
+            <AdSlot type="inline" variant="inContent" className="mt-8" />
           </div>
         );
       })}
 
       {/* Bottom Ad */}
-      <AdBox type="box" />
+      <AdSlot type="banner" variant="bottomBanner" />
     </div>
   );
 }

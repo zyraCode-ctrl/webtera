@@ -11,7 +11,7 @@ const nextConfig = {
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
       "connect-src 'self' https:",
-      "frame-src https: https://*.doubleclick.net https://*.googlesyndication.com",
+      "frame-src https: https://*.doubleclick.net https://*.googlesyndication.com https://*.highperformanceformat.com https://*.effectivecreativeformat.com https://*.profitablecreativeformat.com https://*.prosperate.ai https://*.glamournakedemployee.com",
     ].join("; ");
 
     return [

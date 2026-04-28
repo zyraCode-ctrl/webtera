@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AdBox } from "@/components/AdBox";
+import { AdSlot } from "@/components/AdSlot";
 import { ToolCard } from "@/components/ToolCard";
 import { tools } from "@/data/tools";
 
@@ -40,7 +40,7 @@ export default function Home() {
       </section>
 
       {/* Top ad (natural placement after hero) */}
-      <AdBox type="banner" />
+      <AdSlot type="banner" variant="topBanner" />
 
       {/* Tools */}
       <section className="space-y-5">
@@ -75,7 +75,7 @@ export default function Home() {
 
       {/* In-content slim banner between tools and benefits */}
       <section className="mx-auto w-full max-w-4xl">
-        <AdBox type="inline" />
+        <AdSlot type="inline" variant="inContent" />
       </section>
 
       {/* Why choose us */}
@@ -98,7 +98,7 @@ export default function Home() {
       </section>
 
       {/* Bottom ad */}
-      <AdBox type="box" />
+      <AdSlot type="banner" variant="bottomBanner" />
     </div>
   );
 }

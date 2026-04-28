@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AdBox } from "@/components/AdBox";
+import { AdSlot } from "@/components/AdSlot";
 import type { Post } from "@/data/posts";
 import { GoPostCard } from "./GoPostCard";
 
@@ -49,7 +49,7 @@ export function GoPostList({ posts }: { posts: Post[] }) {
               Enter post number to search
             </div>
             <div className="mt-3">
-              <AdBox type="banner" />
+              <AdSlot type="banner" variant="topBanner" />
             </div>
             <div className="mt-3">
               <input
@@ -73,7 +73,7 @@ export function GoPostList({ posts }: { posts: Post[] }) {
                     title={resultPost.title}
                     preview={resultPost.preview}
                   />
-                  <AdBox type="banner" />
+                  <AdSlot type="banner" variant="topBanner" />
                 </div>
               ) : (
                 <p className="text-sm text-zinc-600">
@@ -89,7 +89,7 @@ export function GoPostList({ posts }: { posts: Post[] }) {
         <div key={p.id} className="space-y-4">
           <GoPostCard id={p.id} title={p.title} preview={p.preview} />
           {shouldShowAdAfterOnCurrentPage(idx + 1) ? (
-            <AdBox type="banner" />
+            <AdSlot type="banner" variant="topBanner" />
           ) : null}
         </div>
       ))}

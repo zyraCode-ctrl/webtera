@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { AdBox } from "@/components/AdBox";
+import { AdSlot } from "@/components/AdSlot";
 import { ToolCard } from "@/components/ToolCard";
 import { getToolBySlug, tools } from "@/data/tools";
 import { getToolContent } from "@/data/toolContent";
@@ -74,7 +74,7 @@ export default function ToolPage({ params }: { params: { slug: string } }) {
       </section>
 
       {/* Ad below title */}
-      <AdBox type="banner" />
+      <AdSlot type="banner" variant="topBanner" />
 
       {/* Tool UI (input → ad → result → ad → actions) */}
       <div className="transition-opacity duration-300">
@@ -160,7 +160,7 @@ export default function ToolPage({ params }: { params: { slug: string } }) {
       </section>
 
       {/* Bottom ad */}
-      <AdBox type="banner" />
+      <AdSlot type="banner" variant="bottomBanner" />
     </div>
   );
 }

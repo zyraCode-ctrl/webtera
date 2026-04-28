@@ -1,4 +1,4 @@
-import { AdBox } from "@/components/AdBox";
+import { AdSlot } from "@/components/AdSlot";
 import { TrackPageView } from "@/components/analytics/TrackPageView";
 import { GoPostList } from "@/components/funnel/GoPostList";
 import { posts } from "@/data/posts";
@@ -36,11 +36,11 @@ export default function GoPage() {
         </p>
       </section>
 
-      <AdBox type="banner" />
+      <AdSlot type="banner" variant="topBanner" />
 
       <GoPostList posts={posts} />
 
-      <AdBox type="banner" />
+      <AdSlot type="banner" variant="bottomBanner" />
     </div>
   );
 }

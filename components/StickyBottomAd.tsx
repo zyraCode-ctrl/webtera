@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AdBox } from "@/components/AdBox";
+import { AdSlot } from "@/components/AdSlot";
 
 const STORAGE_KEY = "wt_sticky_ad_closed_v1";
 const HIDE_MS = 24 * 60 * 60 * 1000;
@@ -27,7 +27,7 @@ export function StickyBottomAd() {
     <div className="fixed inset-x-0 bottom-0 z-50 w-full min-w-0 border-t border-zinc-200 bg-white/95 px-3 py-2 backdrop-blur sm:px-4">
       <div className="mx-auto flex w-full min-w-0 max-w-[1400px] items-start gap-2">
         <div className="min-w-0 flex-1">
-          <AdBox type="bannerMobile" className="h-[50px]" />
+          <AdSlot type="bannerMobile" variant="mobileSticky" />
         </div>
         <button
           type="button"

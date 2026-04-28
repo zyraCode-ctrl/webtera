@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AdBox } from "@/components/AdBox";
+import { AdSlot } from "@/components/AdSlot";
 import { PostCard } from "@/components/PostCard";
 import { getPostById, posts } from "@/data/posts";
 
@@ -24,14 +24,14 @@ export default function PostPage({ params }: { params: { id: string } }) {
         </h1>
       </section>
 
-      <AdBox type="banner" />
+      <AdSlot type="banner" variant="topBanner" />
 
       <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
         <div className="text-sm font-medium text-zinc-800">Preview</div>
         <p className="mt-3 text-sm leading-7 text-zinc-700">{post.preview}</p>
       </section>
 
-      <AdBox type="inline" />
+      <AdSlot type="inline" variant="inContent" />
 
       <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
         <Link
@@ -42,7 +42,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
         </Link>
       </section>
 
-      <AdBox type="inline" />
+      <AdSlot type="inline" variant="inContent" />
 
       <section className="space-y-3">
         <div className="flex items-end justify-between">
@@ -63,7 +63,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
         </div>
       </section>
 
-      <AdBox type="banner" />
+      <AdSlot type="banner" variant="bottomBanner" />
     </div>
   );
 }

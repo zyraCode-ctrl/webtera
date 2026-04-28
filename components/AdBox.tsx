@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Script from "next/script";
 
 export type AdBoxType = "banner" | "bannerMobile" | "box" | "inline";
@@ -8,6 +8,37 @@ export type AdBoxType = "banner" | "bannerMobile" | "box" | "inline";
 type InvokeConfig = { key: string; width: number; height: number };
 
 let invokeQueue: Promise<void> = Promise.resolve();
+let adRequestsBlocked = false;
+const AD_BLOCKED_SESSION_KEY = "wt_ads_blocked_v1";
+
+function isAdRequestsBlocked() {
+  if (adRequestsBlocked) return true;
+  try {
+    const v = window.sessionStorage.getItem(AD_BLOCKED_SESSION_KEY);
+    if (v === "1") {
+      adRequestsBlocked = true;
+      return true;
+    }
+  } catch {
+    // ignore storage failures
+  }
+  return false;
+}
+
+function markAdRequestsBlocked() {
+  adRequestsBlocked = true;
+  try {
+    window.sessionStorage.setItem(AD_BLOCKED_SESSION_KEY, "1");
+  } catch {
+    // ignore storage failures
+  }
+}
+
+function isLocalDevHost() {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname;
+  return host === "localhost" || host === "127.0.0.1" || host === "::1";
+}
 
 function parseInvoke(raw: string | undefined): InvokeConfig | null {
   if (!raw?.trim()) return null;
@@ -32,14 +63,21 @@ function parseInvoke(raw: string | undefined): InvokeConfig | null {
 function envScriptForType(type: AdBoxType): string | undefined {
   const v =
     type === "banner"
-      ? process.env.NEXT_PUBLIC_ADSTERRA_INVOKE_BANNER
+      ? process.env.NEXT_PUBLIC_ADSTERRA_SCRIPT_BANNER
       : type === "bannerMobile"
-        ? process.env.NEXT_PUBLIC_ADSTERRA_INVOKE_BANNER_MOBILE
+        ? process.env.NEXT_PUBLIC_ADSTERRA_SCRIPT_BANNER_MOBILE
         : type === "inline"
-          ? process.env.NEXT_PUBLIC_ADSTERRA_INVOKE_INLINE
+          ? process.env.NEXT_PUBLIC_ADSTERRA_SCRIPT_INLINE
           : process.env.NEXT_PUBLIC_ADSTERRA_SCRIPT_BOX;
   const t = v?.trim();
-  return t || undefined;
+  if (!t) return undefined;
+  try {
+    const u = new URL(t);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return undefined;
+    return u.toString();
+  } catch {
+    return undefined;
+  }
 }
 
 function envInvokeForType(type: AdBoxType): InvokeConfig | null {
@@ -71,11 +109,15 @@ function invokeBaseUrl(): string {
   return (b || "https://www.highperformanceformat.com").replace(/\/+$/, "");
 }
 
-function queueInvokeLoad(invoke: InvokeConfig, container: HTMLElement | null) {
-  if (!container) return;
-  invokeQueue = invokeQueue.then(
+function queueInvokeLoad(
+  invoke: InvokeConfig,
+  container: HTMLElement | null
+): Promise<boolean> {
+  if (!container) return Promise.resolve(false);
+  if (isAdRequestsBlocked()) return Promise.resolve(false);
+  const task = invokeQueue.then(
     () =>
-      new Promise<void>((resolve) => {
+      new Promise<boolean>((resolve) => {
         const w = window as Window & {
           atOptions?: Record<string, unknown>;
         };
@@ -98,18 +140,23 @@ function queueInvokeLoad(invoke: InvokeConfig, container: HTMLElement | null) {
             const retry = document.createElement("script");
             retry.src = s.src;
             retry.async = true;
-            retry.onload = () => resolve();
-            retry.onerror = () => resolve();
+            retry.onload = () => resolve(!!container.querySelector("iframe"));
+            retry.onerror = () => resolve(false);
             container.appendChild(retry);
             return;
           }
-          resolve();
+          resolve(hasRenderedAd);
         };
         s.onload = done;
-        s.onerror = done;
+        s.onerror = () => {
+          markAdRequestsBlocked();
+          resolve(false);
+        };
         container.appendChild(s);
       })
   );
+  invokeQueue = task.then(() => undefined, () => undefined);
+  return task;
 }
 
 export function AdBox({
@@ -124,6 +171,21 @@ export function AdBox({
   const reactId = useId();
   const domId = useMemo(() => `adsterra-${reactId.replace(/:/g, "")}`, [reactId]);
   const mounted = useRef(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [diagStatus, setDiagStatus] = useState<"idle" | "loading" | "loaded" | "error">("idle");
+  const [disabledByClient, setDisabledByClient] = useState(false);
+  const [disabledOnLocalhost, setDisabledOnLocalhost] = useState(false);
+
+  const showDiagnostics =
+    process.env.NODE_ENV !== "production" &&
+    process.env.NEXT_PUBLIC_AD_DEBUG === "1";
+  const allowLocalAds = process.env.NEXT_PUBLIC_AD_ALLOW_LOCALHOST === "1";
+
+  useEffect(() => {
+    setIsHydrated(true);
+    setDisabledByClient(isAdRequestsBlocked());
+    setDisabledOnLocalhost(isLocalDevHost() && !allowLocalAds);
+  }, [allowLocalAds]);
 
   const base =
     "w-full rounded-lg border border-dashed border-zinc-300 bg-zinc-100 text-zinc-500 overflow-hidden";
@@ -138,46 +200,70 @@ export function AdBox({
           : "min-h-[600px] max-w-[160px] mx-auto";
 
   useEffect(() => {
-    if (!invoke || mounted.current) return;
+    if (!isHydrated || !invoke || mounted.current || disabledByClient || disabledOnLocalhost) return;
     mounted.current = true;
+    setDiagStatus("loading");
     const el = document.getElementById(domId);
     if (el) el.innerHTML = "";
-    queueInvokeLoad(invoke, el);
-  }, [invoke, domId]);
+    void queueInvokeLoad(invoke, el).then((ok) => {
+      if (!ok) setDisabledByClient(isAdRequestsBlocked());
+      setDiagStatus(ok ? "loaded" : "error");
+    });
+  }, [invoke, domId, isHydrated, disabledByClient, disabledOnLocalhost]);
 
-  if (scriptSrc) {
+  const diagnosticsBadge = (
+    <div className="pointer-events-none absolute left-2 top-2 z-10 rounded bg-black/80 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-white">
+      {type} · {scriptSrc ? "script" : invoke ? "invoke" : "fallback"} · {diagStatus}
+    </div>
+  );
+
+  if (scriptSrc && isHydrated && !disabledByClient && !disabledOnLocalhost) {
     return (
       <div
         id={domId}
-        className={[base, fallbackSize, className].filter(Boolean).join(" ")}
+        className={["relative", base, fallbackSize, className].filter(Boolean).join(" ")}
       >
+        {showDiagnostics ? diagnosticsBadge : null}
         <Script
           id={`${domId}-script`}
           src={scriptSrc}
           strategy="afterInteractive"
+          onLoad={() => setDiagStatus("loaded")}
+          onError={() => {
+            markAdRequestsBlocked();
+            setDisabledByClient(true);
+            setDiagStatus("error");
+          }}
         />
       </div>
     );
   }
 
-  if (invoke) {
+  if (invoke && isHydrated && !disabledByClient && !disabledOnLocalhost) {
     return (
       <div
         id={domId}
-        className={[base, fallbackSize, className].filter(Boolean).join(" ")}
+        className={["relative", base, fallbackSize, className].filter(Boolean).join(" ")}
         style={{ minHeight: invoke.height }}
-      />
+      >
+        {showDiagnostics ? diagnosticsBadge : null}
+      </div>
     );
   }
 
   return (
     <div
-      className={[base, fallbackSize, "grid place-items-center", className]
+      className={["relative", base, fallbackSize, "grid place-items-center", className]
         .filter(Boolean)
         .join(" ")}
     >
+      {showDiagnostics ? diagnosticsBadge : null}
       <div className="text-xs font-medium uppercase tracking-wider">
-        Ad Space
+        {disabledOnLocalhost
+          ? "Ads disabled on localhost"
+          : disabledByClient
+            ? "Ads blocked by browser"
+            : "Ad Space"}
       </div>
     </div>
   );

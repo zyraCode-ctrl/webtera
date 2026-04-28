@@ -1,4 +1,4 @@
-import { AdBox } from "@/components/AdBox";
+import { AdSlot } from "@/components/AdSlot";
 import { ToolCard } from "@/components/ToolCard";
 import { tools } from "@/data/tools";
 import Link from "next/link";
@@ -20,7 +20,7 @@ export default function ToolsPage() {
         </p>
       </section>
 
-      <AdBox type="banner" />
+      <AdSlot type="banner" variant="topBanner" />
 
       <section className="space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -57,7 +57,7 @@ export default function ToolsPage() {
         </div>
       </section>
 
-      <AdBox type="box" />
+      <AdSlot type="banner" variant="bottomBanner" />
     </div>
   );
 }

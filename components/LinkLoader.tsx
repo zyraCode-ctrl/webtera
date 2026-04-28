@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AdBox } from "@/components/AdBox";
+import { AdSlot } from "@/components/AdSlot";
 import { trackEvent } from "@/lib/analytics";
 import { EVENTS } from "@/lib/events";
 
@@ -46,7 +46,7 @@ export function LinkLoader({
 
   return (
     <div className="min-w-0 w-full space-y-6">
-      <AdBox type="banner" />
+      <AdSlot type="banner" variant="topBanner" />
 
       <section className="mx-auto w-full max-w-lg rounded-2xl border border-zinc-200 bg-white p-6 text-center shadow-sm sm:p-8">
         <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-zinc-200 border-t-indigo-600" />
@@ -69,7 +69,7 @@ export function LinkLoader({
       </section>
 
       <div className="mx-auto w-full max-w-lg">
-        <AdBox type="inline" />
+        <AdSlot type="inline" variant="inContent" />
       </div>
     </div>
   );

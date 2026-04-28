@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import { useSearchParams } from "next/navigation";
-import { AdBox } from "@/components/AdBox";
+import { AdSlot } from "@/components/AdSlot";
 import { toolContent } from "@/data/toolContent";
 import { tools } from "@/data/tools";
 import { getPostLinkStatus, getDownloadLinkStatus, rateUsUrl } from "@/data/links";
@@ -180,7 +180,7 @@ export function HelpPage({ postId }: Props) {
         </p>
       </section>
 
-      <AdBox type="banner" />
+      <AdSlot type="banner" variant="topBanner" />
 
       <section className="mx-auto w-full min-w-0 max-w-3xl space-y-4">
         {TOOL_SLUGS.map((slug, idx) => {
@@ -218,7 +218,7 @@ export function HelpPage({ postId }: Props) {
               {/* Funnel-only scroll sticker right before the inline ad */}
               {isFunnel && idx !== TOOL_SLUGS.length - 1 ? (
                 <div>
-                  <AdBox type="banner" />
+                  <AdSlot type="banner" variant="topBanner" />
                 </div>
               ) : null}
 
@@ -253,7 +253,7 @@ export function HelpPage({ postId }: Props) {
                     Your content is ready — Post #{postId}
                   </div>
                   <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-2 sm:p-3">
-                    <AdBox type="banner" />
+                    <AdSlot type="banner" variant="topBanner" />
                   </div>
                   <div className="grid grid-cols-1 gap-2 text-center text-xs font-semibold uppercase tracking-wide text-zinc-600 sm:grid-cols-3">
                     <div>download👇</div>
@@ -329,7 +329,7 @@ export function HelpPage({ postId }: Props) {
         })}
       </section>
 
-      <AdBox type="banner" />
+      <AdSlot type="banner" variant="bottomBanner" />
 
       {isFunnel ? (
         <div className="pointer-events-none fixed bottom-24 left-1/2 z-50 -translate-x-1/2">

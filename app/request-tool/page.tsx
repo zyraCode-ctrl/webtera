@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AdBox } from "@/components/AdBox";
+import { AdSlot } from "@/components/AdSlot";
 import { trackEvent } from "@/lib/analytics";
 import { TrackPageView } from "@/components/analytics/TrackPageView";
 import { EVENTS } from "@/lib/events";
@@ -31,7 +31,7 @@ export default function RequestToolPage() {
         </p>
       </section>
 
-      <AdBox type="banner" />
+      <AdSlot type="banner" variant="topBanner" />
 
       <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
         {submitted ? (
@@ -139,7 +139,7 @@ export default function RequestToolPage() {
         </form>
       </section>
 
-      <AdBox type="inline" />
+      <AdSlot type="inline" variant="inContent" />
 
       <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
         <h2 className="text-base font-semibold text-zinc-950">What gets built first?</h2>

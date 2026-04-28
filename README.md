@@ -57,6 +57,8 @@ Set an environment variable:
 - `NEXT_PUBLIC_FUNNEL_RATE_URL`: optional URL for the "Rate Us" action
 - `NEXT_PUBLIC_ALLOWED_OUTBOUND_HOSTS`: optional comma-separated host allowlist for `getPostLink`/`getDownloadLink` (example: `mega.nz,xvideos.com,pub-ff1f131c0a954a2ca3d1dfea676addb8.r2.dev`)
 - `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`: optional shared rate-limit backend for API routes (falls back to in-memory when unset)
+- `NEXT_PUBLIC_AD_DEBUG=1`: optional dev-only ad diagnostics badge on each ad slot (source + load status)
+- `NEXT_PUBLIC_AD_ALLOW_LOCALHOST=1`: optional dev override to allow real ad provider calls on localhost (default off to avoid provider-side 403 noise)
 
 ## Analytics events (funnel)
 

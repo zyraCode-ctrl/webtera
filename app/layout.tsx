@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
-import { AdBox } from "@/components/AdBox";
+import { AdSlot } from "@/components/AdSlot";
 import { StickyBottomAd } from "@/components/StickyBottomAd";
 import { Footer } from "@/components/Footer";
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
@@ -45,12 +45,12 @@ export default function RootLayout({
       >
         <GoogleAnalytics />
         <Header />
-        <div className="mx-auto w-full min-w-0 max-w-[1400px] px-3 py-4 sm:px-4">
-          <div className="grid min-w-0 w-full grid-cols-1 gap-4 xl:grid-cols-[220px_minmax(0,1fr)_220px] 2xl:grid-cols-[260px_minmax(0,1fr)_260px]">
+        <div className="mx-auto w-full min-w-0 max-w-[1320px] px-3 py-4 sm:px-4">
+          <div className="grid min-w-0 w-full grid-cols-1 gap-6 xl:grid-cols-[190px_minmax(0,1fr)_190px]">
             <aside className="hidden min-w-0 xl:sticky xl:top-20 xl:block xl:self-start">
-              <div className="space-y-4">
-                <AdBox type="box" />
-                <AdBox type="banner" />
+              <div className="space-y-5">
+                <AdSlot type="box" variant="sidebar" />
+                <AdSlot type="inline" variant="sidebar" />
               </div>
             </aside>
 
@@ -63,9 +63,9 @@ export default function RootLayout({
             </main>
 
             <aside className="hidden min-w-0 xl:sticky xl:top-20 xl:block xl:self-start">
-              <div className="space-y-4">
-                <AdBox type="box" />
-                <AdBox type="banner" />
+              <div className="space-y-5">
+                <AdSlot type="box" variant="sidebar" />
+                <AdSlot type="inline" variant="sidebar" />
               </div>
             </aside>
           </div>
