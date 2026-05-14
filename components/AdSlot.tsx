@@ -13,10 +13,10 @@ const SLOT_STYLES: Record<AdSlotVariant, string> = {
 };
 
 const CARD_STYLES: Record<AdSlotVariant, string> = {
-  topBanner: "rounded-xl border border-zinc-200 bg-white p-2 shadow-sm",
-  inContent: "rounded-xl border border-zinc-200 bg-white p-2 shadow-sm",
-  sidebar: "rounded-xl border border-zinc-200 bg-white p-2 shadow-sm",
-  bottomBanner: "rounded-xl border border-zinc-200 bg-white p-2 shadow-sm",
+  topBanner: "surface-nested p-2",
+  inContent: "surface-nested p-2",
+  sidebar: "surface-nested p-2",
+  bottomBanner: "surface-nested p-2",
   mobileSticky: "",
 };
 

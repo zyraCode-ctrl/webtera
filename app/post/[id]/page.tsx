@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdSlot } from "@/components/AdSlot";
+import { EmbeddedInlineVideo } from "@/components/EmbeddedInlineVideo";
 import { PostCard } from "@/components/PostCard";
 import { getPostById, posts } from "@/data/posts";
 
@@ -18,7 +19,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="min-w-0 w-full space-y-6">
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+      <section className="surface-panel p-6">
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl">
           {post.title}
         </h1>
@@ -26,21 +27,31 @@ export default function PostPage({ params }: { params: { id: string } }) {
 
       <AdSlot type="banner" variant="topBanner" />
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+      <section className="surface-panel p-6">
         <div className="text-sm font-medium text-zinc-800">Preview</div>
         <p className="mt-3 text-sm leading-7 text-zinc-700">{post.preview}</p>
       </section>
 
+      {post.previewVideoUrl ? (
+        <section id="preview" className="surface-panel scroll-mt-24 p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Short preview</h2>
+          <EmbeddedInlineVideo
+            src={post.previewVideoUrl}
+            className="mt-4 aspect-video w-full max-h-[min(70vh,720px)] rounded-xl border border-zinc-200 bg-black object-contain shadow-md select-none"
+          />
+        </section>
+      ) : null}
+
       <AdSlot type="inline" variant="inContent" />
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+      <div className="flex justify-center px-1 py-1 sm:px-0 sm:py-2">
         <Link
-          href={`/out/${encodeURIComponent(post.id)}`}
-          className="inline-flex w-full items-center justify-center rounded-lg bg-zinc-900 px-4 py-3 text-sm font-medium text-white hover:bg-zinc-800 sm:w-auto"
+          href={`/help/${encodeURIComponent(post.id)}?from=video`}
+          className="inline-flex w-full min-h-11 max-w-full items-center justify-center rounded-lg bg-zinc-900 px-4 py-3 text-center text-sm font-medium text-white shadow-sm hover:bg-zinc-800 sm:max-w-none"
         >
           Watch Full Video
         </Link>
-      </section>
+      </div>
 
       <AdSlot type="inline" variant="inContent" />
 

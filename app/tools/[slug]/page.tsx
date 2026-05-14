@@ -64,7 +64,7 @@ export default function ToolPage({ params }: { params: { slug: string } }) {
   return (
     <div className="min-w-0 w-full space-y-8">
       {/* Tool title at top */}
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+      <section className="surface-panel p-6">
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl">
           {tool.title}
         </h1>
@@ -173,7 +173,7 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+    <div className="surface-panel min-w-0 p-5 sm:p-6">
       <div className="text-sm font-semibold text-zinc-950">{title}</div>
       <div className="mt-3">{children}</div>
     </div>

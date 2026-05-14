@@ -71,7 +71,7 @@ export function CaseConverterTool() {
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value as typeof mode)}
-          className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-800"
+          className="rounded-lg border border-violet-200/55 bg-white/95 px-3 py-2 backdrop-blur-sm text-sm font-medium text-zinc-800"
         >
           {modes.map((m) => (
             <option key={m.id} value={m.id}>
@@ -84,14 +84,14 @@ export function CaseConverterTool() {
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        className="min-h-[180px] w-full rounded-xl border border-zinc-200 bg-white p-3 text-sm leading-6 text-zinc-900 shadow-sm outline-none focus:ring-2 focus:ring-zinc-900/10"
+        className="min-h-[180px] w-full rounded-xl border border-violet-200/55 bg-white/95 backdrop-blur-sm p-3 text-sm leading-6 text-zinc-900 shadow-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-300/35"
         placeholder="Paste or type your text here..."
       />
 
       {/* Ad below tool input */}
       <AdBox type="inline" />
 
-      <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+      <div className="surface-nested p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="text-sm font-medium text-zinc-800">Result</div>
           <button
@@ -99,7 +99,7 @@ export function CaseConverterTool() {
             onClick={async () => {
               await navigator.clipboard.writeText(result);
             }}
-            className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-50"
+            className="rounded-lg border border-violet-200/55 bg-white/95 px-3 py-1.5 backdrop-blur-sm text-xs font-medium text-zinc-800 hover:bg-zinc-50"
           >
             Copy
           </button>

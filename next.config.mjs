@@ -3,6 +3,9 @@ const nextConfig = {
   async headers() {
     const csp = [
       "default-src 'self'",
+      // media-src falls back to default-src if omitted — 'self'-only blocked R2-hosted <video> / <audio>
+      // https://pub-*.r2.dev covers Cloudflare R2 public buckets; adjust or narrow to your exact hostname.
+      "media-src 'self' blob: data: https://*.r2.dev",
       "base-uri 'self'",
       "frame-ancestors 'none'",
       "object-src 'none'",

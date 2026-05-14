@@ -18,8 +18,8 @@ export default function RequestToolPage() {
   return (
     <div className="min-w-0 w-full space-y-6">
       <TrackPageView event={EVENTS.requestToolPageView} path="/request-tool" />
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-        <span className="inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-700">
+      <section className="surface-panel p-6">
+        <span className="inline-flex rounded-full border border-violet-200/80 bg-violet-50/90 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-violet-800">
           Community
         </span>
         <h1 className="mt-3 text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl">
@@ -33,7 +33,7 @@ export default function RequestToolPage() {
 
       <AdSlot type="banner" variant="topBanner" />
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+      <section className="surface-panel p-6">
         {submitted ? (
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
             <div className="text-sm font-semibold text-emerald-800">
@@ -83,7 +83,7 @@ export default function RequestToolPage() {
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-900/10"
+                className="w-full rounded-lg border border-violet-200/55 bg-white/95 px-3 py-2 backdrop-blur-sm text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-300/35"
                 placeholder="Your name"
               />
             </label>
@@ -93,7 +93,7 @@ export default function RequestToolPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-900/10"
+                className="w-full rounded-lg border border-violet-200/55 bg-white/95 px-3 py-2 backdrop-blur-sm text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-300/35"
                 placeholder="you@example.com"
               />
             </label>
@@ -105,7 +105,7 @@ export default function RequestToolPage() {
               required
               value={toolName}
               onChange={(e) => setToolName(e.target.value)}
-              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-900/10"
+              className="w-full rounded-lg border border-violet-200/55 bg-white/95 px-3 py-2 backdrop-blur-sm text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-300/35"
               placeholder="Example: Image Compressor"
             />
           </label>
@@ -118,7 +118,7 @@ export default function RequestToolPage() {
               required
               value={details}
               onChange={(e) => setDetails(e.target.value)}
-              className="min-h-[150px] w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm leading-6 outline-none focus:ring-2 focus:ring-zinc-900/10"
+              className="min-h-[150px] w-full rounded-lg border border-violet-200/55 bg-white/95 px-3 py-2 backdrop-blur-sm text-sm leading-6 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-300/35"
               placeholder="Describe what inputs/outputs you need and how you would use this tool."
             />
           </label>
@@ -141,7 +141,7 @@ export default function RequestToolPage() {
 
       <AdSlot type="inline" variant="inContent" />
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+      <section className="surface-panel p-6">
         <h2 className="text-base font-semibold text-zinc-950">What gets built first?</h2>
         <ul className="mt-3 list-inside list-disc space-y-1 text-sm leading-6 text-zinc-600">
           <li>High demand from multiple users</li>

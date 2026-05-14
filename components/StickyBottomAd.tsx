@@ -24,7 +24,7 @@ export function StickyBottomAd() {
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 w-full min-w-0 border-t border-zinc-200 bg-white/95 px-3 py-2 backdrop-blur sm:px-4">
+    <div className="fixed inset-x-0 bottom-0 z-50 w-full min-w-0 border-t border-violet-200/55 bg-white/85 px-3 py-2 shadow-[0_-10px_36px_rgb(109_40_217_/0.08)] backdrop-blur-xl sm:px-4">
       <div className="mx-auto flex w-full min-w-0 max-w-[1400px] items-start gap-2">
         <div className="min-w-0 flex-1">
           <AdSlot type="bannerMobile" variant="mobileSticky" />
@@ -40,7 +40,7 @@ export function StickyBottomAd() {
               // no-op
             }
           }}
-          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-sm text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-violet-200/70 bg-white/90 text-sm text-violet-800 backdrop-blur-sm hover:bg-violet-50 hover:text-violet-950"
         >
           x
         </button>

@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type { MouseEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { AdSlot } from "@/components/AdSlot";
+import { FunnelNavigatingOverlay } from "@/components/FunnelNavigatingOverlay";
 import { toolContent } from "@/data/toolContent";
 import { tools } from "@/data/tools";
 import { getPostLinkStatus, getDownloadLinkStatus, rateUsUrl } from "@/data/links";
 import { trackEvent } from "@/lib/analytics";
 import { funnelGateUrl } from "@/lib/funnelConfig";
+import { openGateThenNavigate } from "@/lib/funnelNavigate";
+import { getPostMediaPresentation } from "@/lib/postMediaUrl";
 import { EVENTS } from "@/lib/events";
 
 type Props = { postId: string };
@@ -19,20 +22,314 @@ const TOOL_SLUGS = Object.keys(toolContent) as Array<keyof typeof toolContent>;
 /** Show the CTA card right after the 6th tool (index 5). */
 const CTA_TOOL_INDEX = 5;
 
+/** For ?from=video, video block is placed after tool index 1–3 (2nd–4th tool), chosen once per page load. */
+const VIDEO_INSERT_MIN_IDX = 1;
+const VIDEO_INSERT_MAX_IDX = 3;
+
+/** In-page anchor for video funnel navigation (sticky bar scroll target). */
+const HELP_VIDEO_SECTION_ID = "help-post-video";
+
+/** First-play gate on inline video: countdown before playback continues. */
+const HELP_PLAY_GATE_SECONDS = 5;
+
+type VideoMediaProps = {
+  postId: string;
+  from: string | null;
+  postLink?: string;
+  postLinkBlocked: boolean;
+  downloadLink?: string;
+  downloadLinkBlocked: boolean;
+  rateUs: string;
+  gateUrl: string;
+  onGatedExternalLink: (e: MouseEvent<HTMLAnchorElement>) => void;
+};
+
+function HelpVideoFunnelIntro({ postId }: { postId: string }) {
+  return (
+    <section className="surface-panel p-6 text-center sm:p-6">
+      <span className="inline-flex rounded-full border border-violet-200/80 bg-violet-50/90 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-violet-800">
+        Help Center
+      </span>
+      <h1 className="mt-3 text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl">
+        Post #{postId}
+      </h1>
+      <p className="mx-auto mt-2 max-w-md text-sm text-zinc-600">
+        Complete guide for all tools below. Your video appears after a few tools—use the purple <b>Jump to video</b> chip
+        at the top while you scroll to move straight to the player.
+      </p>
+    </section>
+  );
+}
+
+function HelpVideoMediaSection({
+  postId,
+  from,
+  postLink,
+  postLinkBlocked,
+  downloadLink,
+  downloadLinkBlocked,
+  rateUs,
+  gateUrl,
+  onGatedExternalLink,
+}: VideoMediaProps) {
+  const presentation = postLink ? getPostMediaPresentation(postLink) : null;
+  const [videoErrored, setVideoErrored] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const playGateCompletedRef = useRef(false);
+  const [playGateOpen, setPlayGateOpen] = useState(false);
+  const [playGateSecondsLeft, setPlayGateSecondsLeft] = useState(HELP_PLAY_GATE_SECONDS);
+  const [playGateSponsorBlocked, setPlayGateSponsorBlocked] = useState(false);
+
+  useEffect(() => {
+    setVideoErrored(false);
+    playGateCompletedRef.current = false;
+    setPlayGateOpen(false);
+    setPlayGateSponsorBlocked(false);
+    setPlayGateSecondsLeft(HELP_PLAY_GATE_SECONDS);
+  }, [postId, postLink]);
+
+  const handlePlayGateContinue = useCallback(() => {
+    playGateCompletedRef.current = true;
+    setPlayGateOpen(false);
+    setPlayGateSponsorBlocked(false);
+    void videoRef.current?.play();
+  }, []);
+
+  useEffect(() => {
+    if (!playGateOpen) return;
+    const id = window.setInterval(() => {
+      setPlayGateSecondsLeft((s) => {
+        if (s <= 1) {
+          window.clearInterval(id);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [playGateOpen]);
+
+  useEffect(() => {
+    if (!playGateOpen || playGateSecondsLeft !== 0) return;
+    const t = window.setTimeout(() => handlePlayGateContinue(), 500);
+    return () => window.clearTimeout(t);
+  }, [playGateOpen, playGateSecondsLeft, handlePlayGateContinue]);
+
+  function handleVideoPlayAttempt() {
+    const el = videoRef.current;
+    if (!el || playGateCompletedRef.current) return;
+    el.pause();
+    try {
+      const w = window.open(gateUrl, "_blank", "noopener,noreferrer");
+      setPlayGateSponsorBlocked(w == null);
+    } catch {
+      setPlayGateSponsorBlocked(true);
+    }
+    setPlayGateSecondsLeft(HELP_PLAY_GATE_SECONDS);
+    setPlayGateOpen(true);
+  }
+
+  const videoPlaybackHelp: ReactNode = (
+    <p className="mt-3 text-xs leading-relaxed text-zinc-600">
+      If this keeps failing: open Cloudflare <b>R2 → bucket → CORS</b> and allow <code className="rounded bg-zinc-100 px-1">GET</code> from your site
+      origins (including <code className="rounded bg-zinc-100 px-1">http://localhost:3000</code>). Confirm the object opens in a new tab and returns{" "}
+      <code className="rounded bg-zinc-100 px-1">200</code> with <code className="rounded bg-zinc-100 px-1">video/mp4</code> — not{" "}
+      <code className="rounded bg-zinc-100 px-1">500</code>/<code className="rounded bg-zinc-100 px-1">403</code>.
+    </p>
+  );
+
+  return (
+    <section
+      id={HELP_VIDEO_SECTION_ID}
+      className="surface-panel scroll-mt-24 overflow-hidden p-5 text-center sm:p-6"
+    >
+      <h2 className="text-lg font-semibold tracking-tight text-zinc-950 sm:text-xl">Your video — Post #{postId}</h2>
+      <p className="mx-auto mt-2 max-w-md text-sm text-zinc-600">Plays inline here when the link allows it.</p>
+
+      <div className="mx-auto mt-6 w-full max-w-3xl text-left">
+        {presentation?.kind === "direct-video" ? (
+          <div className="relative">
+            {playGateOpen ? (
+              <div
+                className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 rounded-xl border border-zinc-600/80 bg-zinc-950/90 px-4 py-6 text-center backdrop-blur-sm sm:px-6"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="help-play-gate-title"
+              >
+                <p id="help-play-gate-title" className="text-sm font-semibold text-white">
+                  Quick sponsor moment
+                </p>
+                <p className="max-w-sm text-xs leading-relaxed text-zinc-300">
+                  We opened our partner offer in a new tab. After a short wait you can continue watching here—or tap below
+                  when the timer finishes.
+                </p>
+                {playGateSponsorBlocked ? (
+                  <a
+                    href={gateUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-10 items-center justify-center rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-400"
+                  >
+                    Open sponsor tab
+                  </a>
+                ) : null}
+                <button
+                  type="button"
+                  disabled={playGateSecondsLeft > 0}
+                  onClick={handlePlayGateContinue}
+                  className={[
+                    "inline-flex min-h-11 items-center justify-center rounded-lg px-5 py-2.5 text-sm font-semibold transition",
+                    playGateSecondsLeft > 0
+                      ? "cursor-not-allowed bg-zinc-600 text-zinc-300"
+                      : "bg-violet-600 text-white hover:bg-violet-500",
+                  ].join(" ")}
+                >
+                  {playGateSecondsLeft > 0 ? `Skip in ${playGateSecondsLeft}s` : "Continue watching"}
+                </button>
+              </div>
+            ) : null}
+            <video
+              ref={videoRef}
+              key={presentation.url}
+              src={presentation.url}
+              controls
+              controlsList="nodownload"
+              playsInline
+              preload="metadata"
+              draggable={false}
+              onContextMenu={(e) => e.preventDefault()}
+              className="aspect-video max-h-[min(70vh,720px)] w-full rounded-xl border border-zinc-200 bg-black object-contain shadow-lg select-none"
+              onPlay={handleVideoPlayAttempt}
+              onError={() => setVideoErrored(true)}
+            />
+            {videoErrored ? (
+              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm text-amber-950">
+                <p className="font-medium">This video did not load in the browser.</p>
+                <p className="mt-2 text-amber-900/95">
+                  The player is pointed at your R2 URL, but the file request failed (wrong path, bucket error, missing CORS, or bad status like 500/403).
+                  Check the <b>Network</b> tab for the <code className="rounded bg-amber-100/90 px-1">.mp4</code> request.
+                </p>
+                <a
+                  href={presentation.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex text-sm font-semibold text-violet-700 underline decoration-violet-300 underline-offset-2 hover:text-violet-900"
+                >
+                  Open video URL in new tab
+                </a>
+                {videoPlaybackHelp}
+              </div>
+            ) : null}
+          </div>
+        ) : presentation?.kind === "iframe-embed" ? (
+          <iframe
+            src={presentation.url}
+            title={`Video embed — post ${postId}`}
+            className="aspect-video w-full rounded-xl border border-zinc-200 bg-zinc-950 shadow-lg"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            allowFullScreen
+          />
+        ) : postLinkBlocked ? (
+          <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            This post&apos;s media link isn&apos;t available (blocked host or invalid URL).
+          </p>
+        ) : presentation?.kind === "external" ? (
+          <div className="space-y-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-center">
+            <p className="text-sm text-zinc-600">
+              This post opens on an external site. Use the button for a sponsor step, then we&apos;ll take you there.
+            </p>
+            <a
+              href={presentation.url}
+              rel="noopener noreferrer"
+              onClick={onGatedExternalLink}
+              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 px-6 py-3 text-sm font-medium text-white transition hover:brightness-110 active:scale-[0.98]"
+            >
+              Continue to media
+            </a>
+          </div>
+        ) : (
+          <p className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+            No media link is configured for this post yet.
+          </p>
+        )}
+      </div>
+
+      <div className="mx-auto mt-6 grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2">
+        {downloadLink ? (
+          <a
+            href={downloadLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() =>
+              trackEvent({
+                event: EVENTS.helpClickDownload,
+                path: `/help/${postId}`,
+                postId,
+                source: from ?? undefined,
+              })
+            }
+            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-emerald-600 px-4 py-3 text-sm font-medium text-white hover:bg-emerald-500"
+          >
+            Download
+          </a>
+        ) : (
+          <span className="inline-flex min-h-11 items-center justify-center rounded-lg bg-zinc-200 px-4 py-3 text-sm font-medium text-zinc-600">
+            {downloadLinkBlocked ? "Blocked (unsafe link)" : "No Download"}
+          </span>
+        )}
+        <a
+          href={rateUs}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() =>
+            trackEvent({
+              event: EVENTS.helpClickRate,
+              path: `/help/${postId}`,
+              postId,
+              source: from ?? undefined,
+            })
+          }
+          className="inline-flex min-h-11 items-center justify-center rounded-lg bg-amber-500 px-4 py-3 text-sm font-medium text-white hover:bg-amber-400"
+        >
+          Rate Us
+        </a>
+      </div>
+    </section>
+  );
+}
+
 export function HelpPage({ postId }: Props) {
   const searchParams = useSearchParams();
   const from = searchParams.get("from");
+  const videoFunnel = from === "video";
   const isFunnel = from === "video" || from === "download";
 
   const [showReveal, setShowReveal] = useState(false);
   const [guideStage, setGuideStage] = useState<GuideStage>("top");
   const [highlightActive, setHighlightActive] = useState(false);
+  const [isGateNavigating, setIsGateNavigating] = useState(false);
+  const [showSponsorFallback, setShowSponsorFallback] = useState(false);
+  const cancelNavigateRef = useRef<(() => void) | null>(null);
   const pageRef = useRef<HTMLDivElement>(null);
   const postLinkCtaRef = useRef<HTMLDivElement>(null);
   const ctaBoxRef = useRef<HTMLDivElement>(null);
+  const videoSlotRef = useRef<{ postId: string; idx: number } | null>(null);
+  let videoInsertAfterIdx = VIDEO_INSERT_MIN_IDX;
+  if (videoFunnel) {
+    if (!videoSlotRef.current || videoSlotRef.current.postId !== postId) {
+      videoSlotRef.current = {
+        postId,
+        idx:
+          VIDEO_INSERT_MIN_IDX +
+          Math.floor(Math.random() * (VIDEO_INSERT_MAX_IDX - VIDEO_INSERT_MIN_IDX + 1)),
+      };
+    }
+    videoInsertAfterIdx = videoSlotRef.current.idx;
+  }
 
-  // Reveal box after user has scrolled through content.
+  // Reveal box after user has scrolled through content (download funnel legacy layout only).
   useEffect(() => {
+    if (videoFunnel) return;
     const handleScroll = () => {
       const el = pageRef.current;
       if (!el) return;
@@ -45,26 +342,43 @@ export function HelpPage({ postId }: Props) {
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [videoFunnel]);
 
   const postLinkStatus = getPostLinkStatus(postId);
   const downloadLinkStatus = getDownloadLinkStatus(postId);
   const postLink = postLinkStatus.url;
   const downloadLink = downloadLinkStatus.url;
 
+  useEffect(() => {
+    return () => {
+      cancelNavigateRef.current?.();
+    };
+  }, []);
+
   function handlePostLinkClick(e: MouseEvent<HTMLAnchorElement>) {
     if (!postLink) return;
+    if (isGateNavigating) return;
 
     e.preventDefault();
 
-    // Always gate: open ad URL first, then redirect current tab to the target link.
-    try {
-      window.open(funnelGateUrl, "_blank", "noopener,noreferrer");
-    } catch {
-      // If blocked/failed, still redirect to the real post link.
-    }
+    trackEvent({
+      event: EVENTS.helpClickLink,
+      path: `/help/${postId}`,
+      postId,
+      source: from ?? undefined,
+    });
 
-    window.location.href = postLink;
+    cancelNavigateRef.current?.();
+    setShowSponsorFallback(false);
+    setIsGateNavigating(true);
+
+    const { cancel, popupLikelyBlocked } = openGateThenNavigate(postLink, funnelGateUrl);
+    cancelNavigateRef.current = cancel;
+    if (popupLikelyBlocked) setShowSponsorFallback(true);
+  }
+
+  function handleJumpToVideo() {
+    document.getElementById(HELP_VIDEO_SECTION_ID)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   useEffect(() => {
@@ -77,17 +391,17 @@ export function HelpPage({ postId }: Props) {
   }, [postId, from]);
 
   useEffect(() => {
-    if (!showReveal || !isFunnel) return;
+    if (!showReveal || !isFunnel || videoFunnel) return;
     trackEvent({
       event: EVENTS.helpRevealShown,
       path: `/help/${postId}`,
       postId,
       source: from ?? undefined,
     });
-  }, [showReveal, isFunnel, postId, from]);
+  }, [showReveal, isFunnel, videoFunnel, postId, from]);
 
   useEffect(() => {
-    if (!isFunnel) return;
+    if (!isFunnel || videoFunnel) return;
 
     const setStageFromPosition = () => {
       const target = ctaBoxRef.current;
@@ -135,9 +449,10 @@ export function HelpPage({ postId }: Props) {
       window.removeEventListener("scroll", setStageFromPosition);
       window.removeEventListener("resize", setStageFromPosition);
     };
-  }, [isFunnel, showReveal]);
+  }, [isFunnel, showReveal, videoFunnel]);
 
   useEffect(() => {
+    if (videoFunnel) return;
     if (guideStage !== "reached") {
       setHighlightActive(false);
       return;
@@ -147,38 +462,61 @@ export function HelpPage({ postId }: Props) {
     // Keep highlight after arrival, then softly fade.
     const t = setTimeout(() => setHighlightActive(false), 5000);
     return () => clearTimeout(t);
-  }, [guideStage]);
+  }, [guideStage, videoFunnel]);
 
   return (
     <div ref={pageRef} className="min-w-0 w-full space-y-6 pb-10">
-      {isFunnel ? (
+      {isGateNavigating ? (
+        <FunnelNavigatingOverlay
+          title="Opening sponsor & your link"
+          description="We're opening our sponsor in a new tab first. This tab will continue to your content in a moment—stay on this screen unless a popup was blocked."
+          showSponsorFallback={showSponsorFallback}
+          sponsorUrl={funnelGateUrl}
+        />
+      ) : null}
+      {isFunnel && !videoFunnel ? (
         <div className="sticky top-14 z-40 flex justify-center">
           <div className="mt-2 rounded-full bg-amber-500 px-4 py-1 text-xs font-semibold text-white shadow-sm sm:px-5">
             Access the resources link and download below.
           </div>
         </div>
+      ) : isFunnel && videoFunnel ? (
+        <div className="sticky top-14 z-40 flex justify-center px-2">
+          <button
+            type="button"
+            onClick={handleJumpToVideo}
+            className="mt-2 inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full bg-violet-600 px-4 py-2 text-xs font-semibold text-white shadow-md ring-4 ring-violet-200/80 transition hover:bg-violet-500 sm:min-h-10 sm:px-5 sm:text-sm"
+          >
+            <span aria-hidden="true">▶</span>
+            Jump to video
+          </button>
+        </div>
       ) : null}
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 text-center shadow-sm">
-        <span className="inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-700">
-          Help Center
-        </span>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl">
-          Tools Help Center
-        </h1>
-        <p className="mt-2 text-sm text-zinc-600">Complete guide for all tools — Post #{postId}</p>
-        <p className="mt-2 text-sm leading-6 text-zinc-800 bg-yellow-100 px-3 py-2 rounded-md">
-          <b>
-            Click on the LINK button below.
-          </b>
-        </p>
+      {videoFunnel ? (
+        <HelpVideoFunnelIntro postId={postId} />
+      ) : (
+        <section className="surface-panel p-6 text-center">
+          <span className="inline-flex rounded-full border border-violet-200/80 bg-violet-50/90 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-violet-800">
+            Help Center
+          </span>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl">
+            Tools Help Center
+          </h1>
+          <p className="mt-2 text-sm text-zinc-600">Complete guide for all tools — Post #{postId}</p>
+          <p className="mt-2 text-sm leading-6 text-zinc-800 bg-yellow-100 px-3 py-2 rounded-md">
+            <b>
+              Click on the LINK button below.
+            </b>
+          </p>
 
-        <p className="mt-2 text-sm leading-6 text-zinc-800 bg-yellow-100 px-3 py-2 rounded-md">
-          <b>
-            After a short redirect, come back here — your video will be ready to view.
-          </b>
-        </p>
-      </section>
+          <p className="mt-2 text-sm leading-6 text-zinc-800 bg-yellow-100 px-3 py-2 rounded-md">
+            <b>
+              After a short redirect, come back here — your video will be ready to view.
+            </b>
+          </p>
+        </section>
+      )}
 
       <AdSlot type="banner" variant="topBanner" />
 
@@ -190,7 +528,7 @@ export function HelpPage({ postId }: Props) {
 
           return (
             <div key={slug} className="space-y-4">
-              <article className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+              <article className="surface-panel p-5 sm:p-6">
                 <div className="inline-flex rounded-full bg-zinc-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-zinc-600">
                   Tool {idx + 1}
                 </div>
@@ -215,6 +553,20 @@ export function HelpPage({ postId }: Props) {
                 </div>
               </article>
 
+              {videoFunnel && idx === videoInsertAfterIdx ? (
+                <HelpVideoMediaSection
+                  postId={postId}
+                  from={from}
+                  postLink={postLink}
+                  postLinkBlocked={postLinkStatus.blocked}
+                  downloadLink={downloadLink}
+                  downloadLinkBlocked={downloadLinkStatus.blocked}
+                  rateUs={rateUsUrl}
+                  gateUrl={funnelGateUrl}
+                  onGatedExternalLink={handlePostLinkClick}
+                />
+              ) : null}
+
               {/* Funnel-only scroll sticker right before the inline ad */}
               {isFunnel && idx !== TOOL_SLUGS.length - 1 ? (
                 <div>
@@ -223,11 +575,11 @@ export function HelpPage({ postId }: Props) {
               ) : null}
 
               {/* Inline CTA after 6th tool, once user passes ~50% scroll */}
-              {isFunnel && showReveal && idx === CTA_TOOL_INDEX ? (
+              {isFunnel && !videoFunnel && showReveal && idx === CTA_TOOL_INDEX ? (
                 <div
                   ref={ctaBoxRef}
                   className={[
-                    "space-y-4 rounded-3xl border-2 border-indigo-200 bg-white p-5 shadow-xl ring-4 ring-indigo-100/80 transition-all duration-300 sm:p-6",
+                    "space-y-4 rounded-3xl border-2 border-violet-300/70 bg-white p-5 shadow-xl shadow-violet-600/10 ring-4 ring-violet-100/90 transition-all duration-300 sm:p-6",
                     highlightActive
                       ? "border-amber-400 ring-amber-200 shadow-[0_0_0_4px_rgba(251,191,36,0.30),0_16px_40px_rgba(251,191,36,0.35)] motion-safe:animate-pulse"
                       : "",
@@ -249,7 +601,7 @@ export function HelpPage({ postId }: Props) {
                       </b>
                     </p>
                   </div>
-                  <div className="text-center text-sm font-semibold uppercase tracking-wider text-indigo-700 sm:text-base">
+                  <div className="text-center text-sm font-semibold uppercase tracking-wider text-violet-800 sm:text-base">
                     Your content is ready — Post #{postId}
                   </div>
                   <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-2 sm:p-3">
@@ -288,15 +640,9 @@ export function HelpPage({ postId }: Props) {
                         href={postLink}
                         rel="noopener noreferrer"
                         onClick={(e) => {
-                          trackEvent({
-                            event: EVENTS.helpClickLink,
-                            path: `/help/${postId}`,
-                            postId,
-                            source: from ?? undefined,
-                          });
                           handlePostLinkClick(e);
                         }}
-                        className="inline-flex min-h-11 items-center justify-center rounded-lg bg-indigo-600 px-4 py-3 text-sm font-medium text-white hover:bg-indigo-500"
+                        className="inline-flex min-h-11 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 px-4 py-3 text-sm font-medium text-white transition hover:brightness-110 active:scale-[0.98]"
                       >
                         Link
                       </a>
@@ -331,7 +677,7 @@ export function HelpPage({ postId }: Props) {
 
       <AdSlot type="banner" variant="bottomBanner" />
 
-      {isFunnel ? (
+      {isFunnel && !videoFunnel ? (
         <div className="pointer-events-none fixed bottom-24 left-1/2 z-50 -translate-x-1/2">
           <div className="flex flex-col items-center gap-2">
             <div className="rounded-full bg-amber-500 px-4 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-lg ring-4 ring-amber-200/80">

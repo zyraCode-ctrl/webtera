@@ -24,7 +24,7 @@ export function JsonFormatterTool() {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+      <section className="surface-panel p-5 sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <label className="text-sm font-medium text-zinc-800">
             JSON input
@@ -34,7 +34,7 @@ export function JsonFormatterTool() {
             <select
               value={indent}
               onChange={(e) => setIndent(Number(e.target.value))}
-              className="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-sm font-medium text-zinc-800"
+              className="rounded-lg border border-violet-200/55 bg-white/95 px-2 py-1 backdrop-blur-sm text-sm font-medium text-zinc-800"
             >
               {[2, 4].map((n) => (
                 <option key={n} value={n}>
@@ -49,7 +49,7 @@ export function JsonFormatterTool() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           spellCheck={false}
-          className="mt-3 min-h-[240px] w-full rounded-xl border border-zinc-200 bg-white p-3 font-mono text-sm leading-6 text-zinc-900 shadow-sm outline-none focus:ring-2 focus:ring-zinc-900/10"
+          className="mt-3 min-h-[240px] w-full rounded-xl border border-violet-200/55 bg-white/95 backdrop-blur-sm p-3 font-mono text-sm leading-6 text-zinc-900 shadow-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-300/35"
           placeholder='Paste JSON here...'
         />
       </section>
@@ -57,7 +57,7 @@ export function JsonFormatterTool() {
       {/* Ad below tool input */}
       <AdBox type="inline" />
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+      <section className="surface-panel p-5 sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <div className="text-sm font-medium text-zinc-800">Result</div>
           <div
@@ -111,7 +111,7 @@ export function JsonFormatterTool() {
                 setToast("Downloaded!");
                 window.setTimeout(() => setToast(null), 1200);
               }}
-              className="inline-flex flex-1 items-center justify-center rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
+              className="inline-flex flex-1 items-center justify-center rounded-lg border border-violet-200/55 bg-white/95 px-4 py-2 backdrop-blur-sm text-sm font-medium text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
             >
               Download
             </button>

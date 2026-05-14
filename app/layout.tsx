@@ -41,7 +41,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full w-full min-w-0">
       <body
-        className={`${inter.variable} ${jetBrainsMono.variable} h-full min-h-dvh min-w-0 w-full max-w-full bg-zinc-50 text-zinc-900 antialiased`}
+        className={`${inter.variable} ${jetBrainsMono.variable} h-full min-h-dvh min-w-0 w-full max-w-full bg-transparent text-zinc-900 antialiased`}
       >
         <GoogleAnalytics />
         <Header />
@@ -55,7 +55,7 @@ export default function RootLayout({
             </aside>
 
             <main className="min-w-0 w-full max-w-full py-2 pb-32 sm:py-4 sm:pb-36">
-              <p className="mb-4 rounded-md bg-yellow-100 px-3 py-2 text-sm leading-6 text-zinc-800">
+              <p className="mb-4 rounded-xl border border-amber-200/70 bg-amber-50/85 px-3 py-2 text-sm leading-6 text-amber-950 shadow-sm shadow-amber-900/5 backdrop-blur-sm">
                 <b>NOTE: TO ACCESS VIDEO FILES COME HERE FROM CHANNEL LINK.</b>
               </p>
               {children}

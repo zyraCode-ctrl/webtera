@@ -15,18 +15,22 @@ export default function ToolsHelpPage() {
   return (
     <div className="min-w-0 w-full space-y-8">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+      <section className="relative overflow-hidden rounded-3xl border border-zinc-200/90 bg-gradient-to-br from-white via-violet-50/70 to-cyan-50/50 shadow-lg shadow-violet-950/[0.04] ring-1 ring-black/[0.03]">
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-20 -top-20 h-60 w-60 rounded-full bg-indigo-200/40 blur-3xl" />
-          <div className="absolute -right-20 -bottom-20 h-60 w-60 rounded-full bg-cyan-200/40 blur-3xl" />
-          <div className="absolute inset-0 bg-gradient-to-b from-white/50 to-white" />
+          <div className="absolute -left-24 -top-28 h-72 w-72 rounded-full bg-gradient-to-br from-violet-400/35 via-fuchsia-400/20 to-transparent blur-3xl" />
+          <div className="absolute -right-20 top-1/3 h-60 w-60 rounded-full bg-gradient-to-bl from-cyan-400/30 via-sky-400/15 to-transparent blur-3xl" />
+          <div className="absolute bottom-0 left-1/3 h-48 w-64 rounded-full bg-gradient-to-tr from-amber-300/22 to-orange-400/10 blur-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/45 via-transparent to-white/75" />
         </div>
         <div className="relative px-6 py-12 text-center sm:px-10">
-          <div className="inline-block rounded-full border border-indigo-200 bg-indigo-50 px-4 py-1 text-xs font-bold uppercase tracking-widest text-indigo-600 mb-4">
+          <div className="inline-block rounded-full border border-violet-200/80 bg-violet-50/90 px-4 py-1 text-xs font-bold uppercase tracking-widest text-violet-700 mb-4">
             Documentation
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl">
-            How to Use All Tools
+          <h1 className="text-balance text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl">
+            How to Use{" "}
+            <span className="bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-600 bg-clip-text text-transparent">
+              All Tools
+            </span>
           </h1>
           <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-zinc-600">
             Everything you need to get the most out of every tool on WebTera — in one easy page.
@@ -38,7 +42,7 @@ export default function ToolsHelpPage() {
       <AdSlot type="banner" variant="topBanner" />
 
       {/* Jump Navigation */}
-      <nav className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <nav className="surface-panel p-5">
         <div className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-3">
           Jump to a Tool
         </div>
@@ -50,7 +54,7 @@ export default function ToolsHelpPage() {
               <Link
                 key={slug}
                 href={`#${slug}`}
-                className="inline-block rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+                className="inline-block rounded-lg border border-violet-200/55 bg-violet-50/70 px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:border-violet-400 hover:bg-violet-50/90 hover:text-violet-800 transition-colors"
               >
                 {tool.title}
               </Link>
@@ -70,11 +74,11 @@ export default function ToolsHelpPage() {
             {/* Tool Section */}
             <section
               id={slug}
-              className="scroll-mt-6 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8 space-y-6"
+              className="surface-panel scroll-mt-6 p-6 sm:p-8 space-y-6"
             >
               {/* Header */}
               <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white text-sm font-bold shadow">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white text-sm font-bold shadow">
                   {idx + 1}
                 </div>
                 <div>
@@ -89,13 +93,13 @@ export default function ToolsHelpPage() {
 
               {/* How To */}
               <div>
-                <h3 className="text-sm font-bold uppercase tracking-widest text-indigo-600 mb-3">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-violet-700 mb-3">
                   How to Use
                 </h3>
                 <ol className="space-y-2 pl-0 list-none">
                   {content.howTo.map((step, i) => (
                     <li key={i} className="flex gap-3 text-sm text-zinc-700 leading-6">
-                      <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
+                      <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-100 text-xs font-bold text-violet-800">
                         {i + 1}
                       </span>
                       {step}
@@ -106,7 +110,7 @@ export default function ToolsHelpPage() {
 
               {/* Example */}
               <div>
-                <h3 className="text-sm font-bold uppercase tracking-widest text-indigo-600 mb-3">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-violet-700 mb-3">
                   Example
                 </h3>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -114,7 +118,7 @@ export default function ToolsHelpPage() {
                     <div className="text-xs font-semibold text-zinc-400 mb-2">
                       {content.example.inputLabel}
                     </div>
-                    <pre className="text-xs text-indigo-300 font-mono whitespace-pre-wrap break-all">
+                    <pre className="text-xs text-violet-300 font-mono whitespace-pre-wrap break-all">
                       {content.example.input}
                     </pre>
                   </div>
@@ -131,13 +135,13 @@ export default function ToolsHelpPage() {
 
               {/* Benefits */}
               <div>
-                <h3 className="text-sm font-bold uppercase tracking-widest text-indigo-600 mb-3">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-violet-700 mb-3">
                   Benefits
                 </h3>
                 <ul className="space-y-2">
                   {content.benefits.map((b, i) => (
                     <li key={i} className="flex gap-2 text-sm text-zinc-700 leading-6">
-                      <span className="text-indigo-500 mt-0.5">✦</span>
+                      <span className="text-violet-500 mt-0.5">✦</span>
                       {b}
                     </li>
                   ))}
@@ -146,18 +150,18 @@ export default function ToolsHelpPage() {
 
               {/* FAQ */}
               <div>
-                <h3 className="text-sm font-bold uppercase tracking-widest text-indigo-600 mb-3">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-violet-700 mb-3">
                   FAQ
                 </h3>
                 <div className="space-y-3">
                   {content.faq.map((f, i) => (
                     <details
                       key={i}
-                      className="group rounded-xl border border-zinc-200 bg-zinc-50 open:border-indigo-200 open:bg-indigo-50"
+                      className="group rounded-xl border border-zinc-200/85 bg-zinc-50/90 backdrop-blur-sm open:border-violet-300/80 open:bg-violet-50/70"
                     >
-                      <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-zinc-800 group-open:text-indigo-700 list-none">
+                      <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-zinc-800 group-open:text-violet-800 list-none">
                         <span>{f.q}</span>
-                        <span className="text-zinc-400 group-open:text-indigo-500 text-lg leading-none">+</span>
+                        <span className="text-zinc-400 group-open:text-violet-600 text-lg leading-none">+</span>
                       </summary>
                       <div className="px-4 pb-4 pt-1 text-sm leading-6 text-zinc-600">
                         {f.a}
@@ -171,7 +175,7 @@ export default function ToolsHelpPage() {
               <div className="pt-2">
                 <Link
                   href="#"
-                  className="text-xs font-medium text-zinc-400 hover:text-indigo-600 transition-colors"
+                  className="text-xs font-medium text-zinc-400 hover:text-violet-700 transition-colors"
                 >
                   ↑ Back to top
                 </Link>

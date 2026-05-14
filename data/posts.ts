@@ -3,6 +3,7 @@ export type Post = {
   title: string;
   preview: string;
   imageUrl: string;
+  previewVideoUrl?: string;
   videoLink: string;
   igLink?: string;
   downloadLink?: string;
@@ -54,9 +55,19 @@ const POST_IMAGE_OVERRIDES: Record<string, string> = {
   "33": "https://pub-ff1f131c0a954a2ca3d1dfea676addb8.r2.dev/video/Untitled%20design%20(3).png",
 };
 
+const POST_PREVIEW_VIDEO_OVERRIDES: Record<string, string> = {
+  "32":
+    "https://pub-ff1f131c0a954a2ca3d1dfea676addb8.r2.dev/video/link%20no%2032%20(1).mp4",
+};
+
 for (const post of posts) {
   const override = POST_IMAGE_OVERRIDES[post.id];
   if (override) post.imageUrl = override;
+}
+
+for (const post of posts) {
+  const v = POST_PREVIEW_VIDEO_OVERRIDES[post.id];
+  if (v) post.previewVideoUrl = v;
 }
 
 export function getPostById(id: string) {

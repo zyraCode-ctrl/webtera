@@ -54,9 +54,9 @@ export function PasswordGeneratorTool() {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+      <section className="surface-panel p-5 sm:p-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <label className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+          <label className="surface-nested p-4">
             <div className="text-sm font-medium text-zinc-800">Length</div>
             <div className="mt-2 flex items-center gap-3">
               <input
@@ -73,7 +73,7 @@ export function PasswordGeneratorTool() {
             </div>
           </label>
 
-          <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+          <div className="surface-nested p-4">
             <div className="text-sm font-medium text-zinc-800">Options</div>
             <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-zinc-700">
               <label className="flex items-center gap-2">
@@ -116,7 +116,7 @@ export function PasswordGeneratorTool() {
       {/* Ad below tool input */}
       <AdBox type="inline" />
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+      <section className="surface-panel p-5 sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="text-sm font-medium text-zinc-800">
@@ -142,7 +142,7 @@ export function PasswordGeneratorTool() {
                 setToast("Copied!");
                 window.setTimeout(() => setToast(null), 1200);
               }}
-              className="inline-flex flex-1 items-center justify-center rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50 sm:flex-none"
+              className="inline-flex flex-1 items-center justify-center rounded-lg border border-violet-200/55 bg-white/95 px-4 py-2 backdrop-blur-sm text-sm font-medium text-zinc-900 hover:bg-zinc-50 sm:flex-none"
             >
               Copy
             </button>

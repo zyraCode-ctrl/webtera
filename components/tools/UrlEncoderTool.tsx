@@ -25,7 +25,7 @@ export function UrlEncoderTool() {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+      <section className="surface-panel p-5 sm:p-6">
         <div className="flex items-center justify-between gap-3 mb-3">
           <label className="text-sm font-medium text-zinc-800">Mode</label>
         </div>
@@ -54,14 +54,14 @@ export function UrlEncoderTool() {
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          className="mt-3 min-h-[160px] w-full rounded-xl border border-zinc-200 bg-white p-3 text-sm leading-6 text-zinc-900 shadow-sm outline-none focus:ring-2 focus:ring-zinc-900/10"
+          className="mt-3 min-h-[160px] w-full rounded-xl border border-violet-200/55 bg-white/95 backdrop-blur-sm p-3 text-sm leading-6 text-zinc-900 shadow-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-300/35"
           placeholder="Paste text or URL parameters here..."
         />
       </section>
 
       <AdBox type="inline" />
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+      <section className="surface-panel p-5 sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <div className="text-sm font-medium text-zinc-800">Result</div>
           <div className="text-xs text-zinc-500">{toast ? toast : "Actions"}</div>

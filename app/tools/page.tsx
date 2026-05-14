@@ -11,7 +11,7 @@ export const metadata = {
 export default function ToolsPage() {
   return (
     <div className="min-w-0 w-full space-y-6">
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+      <section className="surface-panel p-6">
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-950">
           Tools
         </h1>
@@ -38,9 +38,9 @@ export default function ToolsPage() {
         <div className="mt-3">
           <Link
             href="/request-tool"
-            className="block rounded-2xl border border-dashed border-zinc-300 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-zinc-400 hover:shadow-md"
+            className="block surface-panel-lg border-dashed border-violet-300/60 bg-gradient-to-br from-white to-violet-50/30 p-5 transition hover:-translate-y-0.5 hover:border-violet-400/70 hover:shadow-lg hover:shadow-violet-600/10"
           >
-            <div className="inline-flex rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-600">
+            <div className="surface-brand-chip inline-flex px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-violet-800">
               Coming Soon
             </div>
             <h3 className="mt-3 text-base font-semibold text-zinc-950">

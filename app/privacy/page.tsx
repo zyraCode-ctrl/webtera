@@ -6,7 +6,7 @@ export const metadata = {
 export default function PrivacyPage() {
   return (
     <div className="min-w-0 w-full space-y-6">
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+      <section className="surface-panel p-6">
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-950">Privacy Policy</h1>
         <div className="mt-3 space-y-3 text-sm leading-7 text-zinc-600">
           <p>We aim to collect minimal data needed to operate and improve this website.</p>

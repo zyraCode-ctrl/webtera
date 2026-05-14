@@ -18,12 +18,12 @@ export function WordCounterTool() {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+      <section className="surface-panel p-5 sm:p-6">
         <label className="text-sm font-medium text-zinc-800">Text</label>
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          className="mt-3 min-h-[240px] w-full rounded-xl border border-zinc-200 bg-white p-3 text-sm leading-6 text-zinc-900 shadow-sm outline-none focus:ring-2 focus:ring-zinc-900/10"
+          className="mt-3 min-h-[240px] w-full rounded-xl border border-violet-200/55 bg-white/95 backdrop-blur-sm p-3 text-sm leading-6 text-zinc-900 shadow-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-300/35"
           placeholder="Paste or type your text here..."
         />
       </section>
@@ -31,7 +31,7 @@ export function WordCounterTool() {
       {/* Ad below tool input */}
       <AdBox type="inline" />
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+      <section className="surface-panel p-5 sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <div className="text-sm font-medium text-zinc-800">Results</div>
           <div className="text-xs text-zinc-500">{toast ? toast : "Actions"}</div>
@@ -75,7 +75,7 @@ export function WordCounterTool() {
               setToast("Downloaded!");
               window.setTimeout(() => setToast(null), 1200);
             }}
-            className="inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+            className="inline-flex items-center justify-center rounded-lg border border-violet-200/55 bg-white/95 px-4 py-2 backdrop-blur-sm text-sm font-medium text-zinc-900 hover:bg-zinc-50"
           >
             Download
           </button>
@@ -90,7 +90,7 @@ export function WordCounterTool() {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-4 text-center shadow-sm">
+    <div className="surface-nested p-4 text-center">
       <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">
         {label}
       </div>

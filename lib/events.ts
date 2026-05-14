@@ -2,6 +2,7 @@ export const EVENTS = {
   igEntry: "ig_entry",
   goPageView: "go_page_view",
   goClickFullVideo: "go_click_full_video",
+  goClickPreviewPlay: "go_click_preview_play",
   goClickHd: "go_click_hd",
   outLoaderStarted: "out_loader_started",
   outLoaderCompleted: "out_loader_completed",

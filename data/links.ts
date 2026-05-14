@@ -4,9 +4,10 @@
  * EDIT THIS FILE to set the real links for each post.
  *
  * Structure:
- *   postLinks[postId] = array of URLs
- *   The user will see a "Link" button on the help page.
- *   That button opens postLinks[postId][0] (first link).
+ *   postLinks[postId]      = HTTPS URL shown on the video help page (often your R2 / bucket file URL).
+ *   Help page (?from=video): direct `.mp4` / R2 URLs play inline in a video player when allowed.
+ *   Other URLs still open after the gated "Link"/continue flow where applicable.
+ *   Legacy help layout (?from=download) may still show a scroll‑revealed Link button.
  *
  * downloadLinks[postId] = direct download / drive URL for that post.
  * rateUsUrl            = your Google Play / App Store / review page.

@@ -32,7 +32,7 @@ export function Base64Tool() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <label className="text-sm font-medium text-zinc-800">Input</label>
-        <div className="inline-flex rounded-lg border border-zinc-200 bg-white p-1">
+        <div className="inline-flex rounded-lg border border-violet-200/55 bg-white/95 p-1 backdrop-blur-sm">
           <button
             type="button"
             onClick={() => setMode("encode")}
@@ -64,7 +64,7 @@ export function Base64Tool() {
         value={input}
         onChange={(e) => setInput(e.target.value)}
         spellCheck={false}
-        className="min-h-[180px] w-full rounded-xl border border-zinc-200 bg-white p-3 text-sm leading-6 text-zinc-900 shadow-sm outline-none focus:ring-2 focus:ring-zinc-900/10"
+        className="min-h-[180px] w-full rounded-xl border border-violet-200/55 bg-white/95 backdrop-blur-sm p-3 text-sm leading-6 text-zinc-900 shadow-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-300/35"
         placeholder={
           mode === "encode" ? "Enter text to encode..." : "Paste Base64 to decode..."
         }
@@ -73,7 +73,7 @@ export function Base64Tool() {
       {/* Ad below tool input */}
       <AdBox type="inline" />
 
-      <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+      <div className="surface-nested p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="text-sm font-medium text-zinc-800">Result</div>
           <div

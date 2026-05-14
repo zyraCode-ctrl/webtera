@@ -70,7 +70,7 @@ export function PostCard({
       >
       {/* View Button */}
         <Link
-          href={`/out/${encodeURIComponent(id)}?from=video`}
+          href={`/help/${encodeURIComponent(id)}?from=video`}
           style={{
             display: "flex",
             flexDirection: "column",

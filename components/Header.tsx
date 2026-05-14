@@ -31,9 +31,12 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full min-w-0 border-b border-zinc-200 bg-white/90 backdrop-blur">
+    <header className="sticky top-0 z-50 w-full min-w-0 border-b border-violet-200/55 bg-white/75 shadow-sm shadow-violet-950/[0.04] backdrop-blur-xl">
       <div className="mx-auto flex w-full min-h-14 min-w-0 max-w-[1400px] items-center justify-between gap-3 px-3 py-2 sm:px-4">
-        <Link href="/" className="font-semibold tracking-tight text-zinc-950">
+        <Link
+          href="/"
+          className="bg-gradient-to-r from-violet-700 via-fuchsia-600 to-cyan-600 bg-clip-text font-semibold tracking-tight text-transparent"
+        >
           WebTera Tools
         </Link>
 
@@ -49,8 +52,8 @@ export function Header() {
                 className={[
                   "rounded-md px-3 py-2 font-medium transition",
                   active
-                    ? "text-zinc-950"
-                    : "text-zinc-600 hover:text-zinc-950 hover:underline",
+                    ? "bg-violet-50/90 text-violet-950 ring-1 ring-violet-200/70"
+                    : "text-zinc-600 hover:bg-violet-50/50 hover:text-violet-950 hover:underline",
                 ].join(" ")}
               >
                 {l.label}
@@ -62,7 +65,7 @@ export function Header() {
         {/* Mobile hamburger */}
         <button
           type="button"
-          className="inline-flex items-center justify-center rounded-md p-2 text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950 sm:hidden"
+          className="inline-flex items-center justify-center rounded-md p-2 text-violet-900/80 hover:bg-violet-50/80 hover:text-violet-950 sm:hidden"
           aria-label="Open menu"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
@@ -87,7 +90,7 @@ export function Header() {
 
       {/* Mobile menu */}
       {open ? (
-        <div className="border-t border-zinc-200 bg-white sm:hidden">
+        <div className="border-t border-violet-200/55 bg-white/90 backdrop-blur-md sm:hidden">
           <nav className="mx-auto w-full min-w-0 max-w-[1400px] px-3 py-3 sm:px-4">
             <div className="flex flex-col gap-1">
               {links.map((l) => {
@@ -100,8 +103,8 @@ export function Header() {
                     className={[
                       "rounded-lg px-3 py-2 text-sm font-medium transition",
                       active
-                        ? "bg-zinc-100 text-zinc-950"
-                        : "text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950",
+                        ? "bg-violet-50 text-violet-950 ring-1 ring-violet-200/70"
+                        : "text-zinc-700 hover:bg-violet-50/70 hover:text-violet-950",
                     ].join(" ")}
                   >
                     {l.label}

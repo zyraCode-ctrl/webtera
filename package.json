@@ -10,7 +10,8 @@
     "build:safe": "node --max-old-space-size=6144 ./node_modules/next/dist/bin/next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "tsx --test tests/**/*.test.ts"
+    "test": "tsx --test tests/**/*.test.ts",
+    "check-media": "node scripts/check-media-url.mjs"
   },
   "dependencies": {
     "@types/marked": "^5.0.2",
