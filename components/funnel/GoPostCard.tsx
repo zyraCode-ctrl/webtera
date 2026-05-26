@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { FunnelNavigatingOverlay } from "@/components/FunnelNavigatingOverlay";
 import { trackEvent } from "@/lib/analytics";
 import { funnelGateUrl, funnelHdUrl } from "@/lib/funnelConfig";
+import { unlockGoFullListForSession } from "@/lib/funnelGoSession";
 import { openGateChainThenNavigate, openGateThenNavigate } from "@/lib/funnelNavigate";
 import { EVENTS } from "@/lib/events";
 
@@ -51,6 +52,31 @@ export function GoPostCard({
     };
   }, []);
 
+  // BF-cache restores `/go` with frozen React state — sponsor overlay can stay "open".
+  useEffect(() => {
+    function resetNavigateOverlay() {
+      cancelNavigateRef.current?.();
+      cancelNavigateRef.current = null;
+      setIsRedirecting(false);
+      setShowSponsorFallback(false);
+    }
+
+    function onPageShow(e: PageTransitionEvent) {
+      if (e.persisted) resetNavigateOverlay();
+    }
+
+    function onPopState() {
+      if (window.location.pathname === "/go") resetNavigateOverlay();
+    }
+
+    window.addEventListener("pageshow", onPageShow);
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      window.removeEventListener("pageshow", onPageShow);
+      window.removeEventListener("popstate", onPopState);
+    };
+  }, []);
+
   const fullVideoHref = `/help/${encodeURIComponent(id)}?from=video`;
   const playTargetHref = previewVideoUrl
     ? `/post/${encodeURIComponent(id)}#preview`
@@ -58,6 +84,8 @@ export function GoPostCard({
 
   function beginFullVideoNavigation() {
     if (isRedirecting) return;
+
+    unlockGoFullListForSession();
 
     cancelNavigateRef.current?.();
     setShowSponsorFallback(false);
@@ -79,6 +107,8 @@ export function GoPostCard({
 
   function beginPlayNavigation() {
     if (isRedirecting) return;
+
+    unlockGoFullListForSession();
 
     cancelNavigateRef.current?.();
     setShowSponsorFallback(false);

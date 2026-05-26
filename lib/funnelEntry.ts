@@ -63,7 +63,7 @@ export async function issueFunnelAccess(
   const sig = await hmacSha256(secret, payloadB64);
   const token = `${payloadB64}.${bytesToBase64Url(sig)}`;
 
-  const res = NextResponse.redirect(new URL("/go", req.url));
+  const res = NextResponse.redirect(new URL("/go?from_entry=1", req.url));
   res.cookies.set({
     name: COOKIE_NAME,
     value: token,
