@@ -9,7 +9,6 @@ import { toolContent } from "@/data/toolContent";
 import { tools } from "@/data/tools";
 import { getPostLinkStatus, getDownloadLinkStatus, rateUsUrl } from "@/data/links";
 import { trackEvent } from "@/lib/analytics";
-import { funnelGateUrl } from "@/lib/funnelConfig";
 import { openGateThenNavigate } from "@/lib/funnelNavigate";
 import { getPostMediaPresentation } from "@/lib/postMediaUrl";
 import { EVENTS } from "@/lib/events";
@@ -40,7 +39,6 @@ type VideoMediaProps = {
   downloadLink?: string;
   downloadLinkBlocked: boolean;
   rateUs: string;
-  gateUrl: string;
   onGatedExternalLink: (e: MouseEvent<HTMLAnchorElement>) => void;
 };
 
@@ -69,7 +67,6 @@ function HelpVideoMediaSection({
   downloadLink,
   downloadLinkBlocked,
   rateUs,
-  gateUrl,
   onGatedExternalLink,
 }: VideoMediaProps) {
   const presentation = postLink ? getPostMediaPresentation(postLink) : null;
@@ -78,20 +75,17 @@ function HelpVideoMediaSection({
   const playGateCompletedRef = useRef(false);
   const [playGateOpen, setPlayGateOpen] = useState(false);
   const [playGateSecondsLeft, setPlayGateSecondsLeft] = useState(HELP_PLAY_GATE_SECONDS);
-  const [playGateSponsorBlocked, setPlayGateSponsorBlocked] = useState(false);
 
   useEffect(() => {
     setVideoErrored(false);
     playGateCompletedRef.current = false;
     setPlayGateOpen(false);
-    setPlayGateSponsorBlocked(false);
     setPlayGateSecondsLeft(HELP_PLAY_GATE_SECONDS);
   }, [postId, postLink]);
 
   const handlePlayGateContinue = useCallback(() => {
     playGateCompletedRef.current = true;
     setPlayGateOpen(false);
-    setPlayGateSponsorBlocked(false);
     void videoRef.current?.play();
   }, []);
 
@@ -119,12 +113,6 @@ function HelpVideoMediaSection({
     const el = videoRef.current;
     if (!el || playGateCompletedRef.current) return;
     el.pause();
-    try {
-      const w = window.open(gateUrl, "_blank", "noopener,noreferrer");
-      setPlayGateSponsorBlocked(w == null);
-    } catch {
-      setPlayGateSponsorBlocked(true);
-    }
     setPlayGateSecondsLeft(HELP_PLAY_GATE_SECONDS);
     setPlayGateOpen(true);
   }
@@ -160,19 +148,8 @@ function HelpVideoMediaSection({
                   Quick sponsor moment
                 </p>
                 <p className="max-w-sm text-xs leading-relaxed text-zinc-300">
-                  We opened our partner offer in a new tab. After a short wait you can continue watching here—or tap below
-                  when the timer finishes.
+                  After a short wait you can continue watching here—or tap below when the timer finishes.
                 </p>
-                {playGateSponsorBlocked ? (
-                  <a
-                    href={gateUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex min-h-10 items-center justify-center rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-400"
-                  >
-                    Open sponsor tab
-                  </a>
-                ) : null}
                 <button
                   type="button"
                   disabled={playGateSecondsLeft > 0}
@@ -308,7 +285,6 @@ export function HelpPage({ postId }: Props) {
   const [guideStage, setGuideStage] = useState<GuideStage>("top");
   const [highlightActive, setHighlightActive] = useState(false);
   const [isGateNavigating, setIsGateNavigating] = useState(false);
-  const [showSponsorFallback, setShowSponsorFallback] = useState(false);
   const cancelNavigateRef = useRef<(() => void) | null>(null);
   const pageRef = useRef<HTMLDivElement>(null);
   const postLinkCtaRef = useRef<HTMLDivElement>(null);
@@ -369,12 +345,10 @@ export function HelpPage({ postId }: Props) {
     });
 
     cancelNavigateRef.current?.();
-    setShowSponsorFallback(false);
     setIsGateNavigating(true);
 
-    const { cancel, popupLikelyBlocked } = openGateThenNavigate(postLink, funnelGateUrl);
+    const { cancel } = openGateThenNavigate(postLink);
     cancelNavigateRef.current = cancel;
-    if (popupLikelyBlocked) setShowSponsorFallback(true);
   }
 
   function handleJumpToVideo() {
@@ -468,10 +442,8 @@ export function HelpPage({ postId }: Props) {
     <div ref={pageRef} className="min-w-0 w-full space-y-6 pb-10">
       {isGateNavigating ? (
         <FunnelNavigatingOverlay
-          title="Opening sponsor & your link"
-          description="We're opening our sponsor in a new tab first. This tab will continue to your content in a moment—stay on this screen unless a popup was blocked."
-          showSponsorFallback={showSponsorFallback}
-          sponsorUrl={funnelGateUrl}
+          title="Opening your link"
+          description="This tab will continue to your content in a moment—stay on this screen."
         />
       ) : null}
       {isFunnel && !videoFunnel ? (
@@ -562,7 +534,6 @@ export function HelpPage({ postId }: Props) {
                   downloadLink={downloadLink}
                   downloadLinkBlocked={downloadLinkStatus.blocked}
                   rateUs={rateUsUrl}
-                  gateUrl={funnelGateUrl}
                   onGatedExternalLink={handlePostLinkClick}
                 />
               ) : null}

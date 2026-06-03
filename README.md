@@ -54,8 +54,8 @@ Set an environment variable:
 - `ANALYTICS_WEBHOOK_URL`: optional webhook endpoint for funnel analytics events
 - `REQUEST_TOOL_WEBHOOK_URL`: optional webhook endpoint for `/request-tool` submissions
 - `NEXT_PUBLIC_FUNNEL_DEFAULT_EXTERNAL_URL`: optional default external URL fallback for funnel actions
-- `NEXT_PUBLIC_FUNNEL_GATE_URL`: optional URL opened as gate before sending users to target content
-- `NEXT_PUBLIC_FUNNEL_HD_URL`: optional default URL for "View in HD" actions and default downloads
+- `NEXT_PUBLIC_POPUNDER_SCRIPT_SRC`: optional popunder script URL (default: Adsterra popunder for webteratools.com)
+- `NEXT_PUBLIC_FUNNEL_RATE_URL`: optional Google Play / App Store review page for "Rate Us"
 - `NEXT_PUBLIC_FUNNEL_RATE_URL`: optional URL for the "Rate Us" action
 - `NEXT_PUBLIC_ALLOWED_OUTBOUND_HOSTS`: optional comma-separated host allowlist for `getPostLink`/`getDownloadLink` (example: `mega.nz,xvideos.com,pub-ff1f131c0a954a2ca3d1dfea676addb8.r2.dev`)
 - `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`: optional shared rate-limit backend for API routes (falls back to in-memory when unset)

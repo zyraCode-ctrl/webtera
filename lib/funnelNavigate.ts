@@ -1,14 +1,13 @@
-/** Time to keep our transition overlay visible after opening the sponsor tab so the hop feels deliberate. */
+/** Brief delay so the global popunder script can attach to the user gesture before navigation. */
 export const FUNNEL_GATE_TO_NEXT_MS = 900;
 
 export type OpenGateThenNavigateResult = {
-  /** `true` when `window.open` returned null (often a blocked popup). */
+  /** Kept for API compatibility; popunder does not use popup tabs. */
   popupLikelyBlocked: boolean;
   cancel: () => void;
 };
 
 export type OpenGateThenNavigateDeps = {
-  openGateTab: (url: string) => Window | null;
   navigateTo: (url: string) => void;
   /** Runs `fn` after `ms`; returns a function that cancels it. Avoids exposing timer-handle typing differences (DOM vs Node). */
   afterDelay: (fn: () => void, ms: number) => () => void;
@@ -16,13 +15,6 @@ export type OpenGateThenNavigateDeps = {
 
 function browserDeps(): OpenGateThenNavigateDeps {
   return {
-    openGateTab(url) {
-      try {
-        return window.open(url, "_blank", "noopener,noreferrer");
-      } catch {
-        return null;
-      }
-    },
     navigateTo(url) {
       window.location.assign(url);
     },
@@ -35,7 +27,6 @@ function browserDeps(): OpenGateThenNavigateDeps {
 
 function serverStubDeps(): OpenGateThenNavigateDeps {
   return {
-    openGateTab: () => null,
     navigateTo: () => {},
     afterDelay(fn, ms) {
       const id = setTimeout(fn, ms);
@@ -50,86 +41,53 @@ function resolveDeps(overrides?: Partial<OpenGateThenNavigateDeps>): OpenGateThe
 }
 
 /**
- * Opens the sponsor URL in a new tab (same user gesture as the click) and navigates this tab shortly after.
+ * Waits briefly (popunder runs site-wide), then navigates this tab to `nextUrl`.
+ * `gateUrl` / `gatePasses` are ignored — kept for stable call sites during the popunder migration.
  */
 export function openGateThenNavigate(
   nextUrl: string,
-  gateUrl: string,
+  _gateUrl?: string,
   overrides?: Partial<OpenGateThenNavigateDeps>
 ): OpenGateThenNavigateResult {
   const d = resolveDeps(overrides);
-  const w = d.openGateTab(gateUrl);
-  const popupLikelyBlocked = w == null;
   const cancelNavigate = d.afterDelay(() => {
     d.navigateTo(nextUrl);
   }, FUNNEL_GATE_TO_NEXT_MS);
   return {
-    popupLikelyBlocked,
+    popupLikelyBlocked: false,
     cancel: cancelNavigate,
   };
 }
 
 /**
- * Opens the sponsor URL in a new tab, then runs `callback` in this tab after {@link FUNNEL_GATE_TO_NEXT_MS}.
- * Use when staying on the same page (e.g. scroll to an anchor) instead of navigating away.
+ * Runs `callback` after {@link FUNNEL_GATE_TO_NEXT_MS} (popunder attaches on the same click).
  */
 export function openGateThenCallback(
-  gateUrl: string,
+  _gateUrl: string,
   callback: () => void,
   overrides?: Partial<OpenGateThenNavigateDeps>
 ): OpenGateThenNavigateResult {
   const d = resolveDeps(overrides);
-  const w = d.openGateTab(gateUrl);
-  const popupLikelyBlocked = w == null;
   const cancelCallback = d.afterDelay(() => {
     callback();
   }, FUNNEL_GATE_TO_NEXT_MS);
   return {
-    popupLikelyBlocked,
+    popupLikelyBlocked: false,
     cancel: cancelCallback,
   };
 }
 
-/**
- * Opens `gateUrl` in a new tab once per "pass", waiting {@link FUNNEL_GATE_TO_NEXT_MS} between passes,
- * then navigates this tab to `nextUrl`. Use for multi-step sponsor flows (e.g. preview play).
- */
+/** Same as {@link openGateThenNavigate}; chain passes are no longer used with one popunder per page. */
 export function openGateChainThenNavigate(
   nextUrl: string,
-  gateUrl: string,
-  gatePasses: number,
+  _gateUrl?: string,
+  gatePasses?: number,
   overrides?: Partial<OpenGateThenNavigateDeps>
 ): OpenGateThenNavigateResult {
-  const d = resolveDeps(overrides);
-  if (gatePasses <= 0) {
+  if (gatePasses != null && gatePasses <= 0) {
+    const d = resolveDeps(overrides);
     d.navigateTo(nextUrl);
     return { popupLikelyBlocked: false, cancel: () => {} };
   }
-
-  let cancelled = false;
-  let cancelTimer: (() => void) | null = null;
-  let anyPopupBlocked = false;
-
-  const runStep = (passesLeft: number) => {
-    if (cancelled) return;
-    if (passesLeft <= 0) {
-      d.navigateTo(nextUrl);
-      return;
-    }
-    const w = d.openGateTab(gateUrl);
-    if (w == null) anyPopupBlocked = true;
-    cancelTimer = d.afterDelay(() => {
-      runStep(passesLeft - 1);
-    }, FUNNEL_GATE_TO_NEXT_MS);
-  };
-
-  runStep(gatePasses);
-
-  return {
-    popupLikelyBlocked: anyPopupBlocked,
-    cancel: () => {
-      cancelled = true;
-      cancelTimer?.();
-    },
-  };
+  return openGateThenNavigate(nextUrl, _gateUrl, overrides);
 }

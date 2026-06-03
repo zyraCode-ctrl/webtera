@@ -1,5 +1,5 @@
-const FALLBACK_EXTERNAL_URL =
-  "https://glamournakedemployee.com/kbzj5m7n?key=3015ea85fcd181f0a2e0182ffff40304";
+const DEFAULT_POPUNDER_SCRIPT_SRC =
+  "https://glamournakedemployee.com/65/4e/dc/654edcc7943830a5fe010bc8cdbfe556.js";
 
 function sanitizeHttpUrl(value: string | undefined): string | undefined {
   if (!value) return undefined;
@@ -16,14 +16,25 @@ function sanitizeHttpUrl(value: string | undefined): string | undefined {
   }
 }
 
-export const funnelDefaultExternalUrl =
-  sanitizeHttpUrl(process.env.NEXT_PUBLIC_FUNNEL_DEFAULT_EXTERNAL_URL) || FALLBACK_EXTERNAL_URL;
+function sanitizeScriptSrc(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== "https:") return undefined;
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+}
 
-export const funnelGateUrl =
-  sanitizeHttpUrl(process.env.NEXT_PUBLIC_FUNNEL_GATE_URL) || funnelDefaultExternalUrl;
+export const popunderScriptSrc =
+  sanitizeScriptSrc(process.env.NEXT_PUBLIC_POPUNDER_SCRIPT_SRC) ||
+  DEFAULT_POPUNDER_SCRIPT_SRC;
 
-export const funnelHdUrl =
-  sanitizeHttpUrl(process.env.NEXT_PUBLIC_FUNNEL_HD_URL) || funnelDefaultExternalUrl;
+const DEFAULT_RATE_URL = "https://example.com/rate-us";
 
+/** Store/review page (set NEXT_PUBLIC_FUNNEL_RATE_URL in production). */
 export const funnelRateUrl =
-  sanitizeHttpUrl(process.env.NEXT_PUBLIC_FUNNEL_RATE_URL) || funnelDefaultExternalUrl;
+  sanitizeHttpUrl(process.env.NEXT_PUBLIC_FUNNEL_RATE_URL) || DEFAULT_RATE_URL;

@@ -6,7 +6,6 @@ import type { MouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import { FunnelNavigatingOverlay } from "@/components/FunnelNavigatingOverlay";
 import { trackEvent } from "@/lib/analytics";
-import { funnelGateUrl, funnelHdUrl } from "@/lib/funnelConfig";
 import { unlockGoFullListForSession } from "@/lib/funnelGoSession";
 import { openGateChainThenNavigate, openGateThenNavigate } from "@/lib/funnelNavigate";
 import { EVENTS } from "@/lib/events";
@@ -42,7 +41,6 @@ export function GoPostCard({
   const router = useRouter();
   const [mediaFailed, setMediaFailed] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
-  const [showSponsorFallback, setShowSponsorFallback] = useState(false);
   const [overlayVariant, setOverlayVariant] = useState<OverlayVariant>("full");
   const cancelNavigateRef = useRef<(() => void) | null>(null);
 
@@ -58,7 +56,6 @@ export function GoPostCard({
       cancelNavigateRef.current?.();
       cancelNavigateRef.current = null;
       setIsRedirecting(false);
-      setShowSponsorFallback(false);
     }
 
     function onPageShow(e: PageTransitionEvent) {
@@ -88,7 +85,6 @@ export function GoPostCard({
     unlockGoFullListForSession();
 
     cancelNavigateRef.current?.();
-    setShowSponsorFallback(false);
     pinGoListAnchorForBack(id);
 
     const skipAd = Math.random() < 0.5;
@@ -100,9 +96,8 @@ export function GoPostCard({
     setOverlayVariant("full");
     setIsRedirecting(true);
 
-    const { cancel, popupLikelyBlocked } = openGateThenNavigate(fullVideoHref, funnelGateUrl);
+    const { cancel } = openGateThenNavigate(fullVideoHref);
     cancelNavigateRef.current = cancel;
-    if (popupLikelyBlocked) setShowSponsorFallback(true);
   }
 
   function beginPlayNavigation() {
@@ -111,14 +106,12 @@ export function GoPostCard({
     unlockGoFullListForSession();
 
     cancelNavigateRef.current?.();
-    setShowSponsorFallback(false);
     pinGoListAnchorForBack(id);
     setOverlayVariant("play");
     setIsRedirecting(true);
 
-    const { cancel, popupLikelyBlocked } = openGateChainThenNavigate(playTargetHref, funnelGateUrl, 2);
+    const { cancel } = openGateChainThenNavigate(playTargetHref, undefined, 2);
     cancelNavigateRef.current = cancel;
-    if (popupLikelyBlocked) setShowSponsorFallback(true);
   }
 
   function handleFullVideoClick(e: MouseEvent<HTMLAnchorElement>) {
@@ -143,21 +136,16 @@ export function GoPostCard({
   }
 
   const overlayTitle =
-    overlayVariant === "play" ? "Opening sponsors & preview" : "Opening sponsor & your video";
+    overlayVariant === "play" ? "Opening preview" : "Opening your video";
   const overlayDescription =
     overlayVariant === "play"
-      ? "We’re opening two quick partner offers in new tabs (one after the other). This page will continue to your preview shortly—stay here unless a popup was blocked."
-      : "We're opening our sponsor in a new tab first. You'll move to the next step here in just a moment—no action needed unless a popup was blocked.";
+      ? "Taking you to the preview in just a moment—stay on this screen."
+      : "Taking you to the full video page in just a moment—stay on this screen.";
 
   return (
     <article id={`go-post-${id}`} className="relative min-w-0 scroll-mt-28 surface-panel p-5 transition hover:shadow-md">
       {isRedirecting ? (
-        <FunnelNavigatingOverlay
-          title={overlayTitle}
-          description={overlayDescription}
-          showSponsorFallback={showSponsorFallback}
-          sponsorUrl={funnelGateUrl}
-        />
+        <FunnelNavigatingOverlay title={overlayTitle} description={overlayDescription} />
       ) : null}
       {!mediaFailed ? (
         <div className="relative mb-3 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100">
@@ -228,10 +216,8 @@ export function GoPostCard({
         >
           Full Video
         </Link>
-        <a
-          href={funnelHdUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          href={fullVideoHref}
           onClick={() =>
             trackEvent({
               event: EVENTS.goClickHd,
@@ -242,7 +228,7 @@ export function GoPostCard({
           className="inline-flex min-h-10 items-center justify-center whitespace-nowrap rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-500"
         >
           View in HD
-        </a>
+        </Link>
       </div>
     </article>
   );

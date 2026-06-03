@@ -55,10 +55,11 @@ test("funnel constants: timing is coherent", () => {
   assert.ok(LINK_LOADER_SECONDS >= 1 && LINK_LOADER_SECONDS <= 30);
 });
 
-test("funnel flow: funnelGateUrl parses as https URL", async () => {
-  const mod = await import(`../lib/funnelConfig.ts?gate=${Date.now()}`);
-  assert.match(mod.funnelGateUrl, /^https:\/\//);
+test("funnel flow: popunderScriptSrc parses as https URL", async () => {
+  const mod = await import(`../lib/funnelConfig.ts?pop=${Date.now()}`);
+  assert.match(mod.popunderScriptSrc, /^https:\/\//);
+  assert.ok(mod.popunderScriptSrc.endsWith(".js"));
   assert.doesNotThrow(() => {
-    void new URL(mod.funnelGateUrl);
+    void new URL(mod.popunderScriptSrc);
   });
 });

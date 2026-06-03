@@ -12,7 +12,7 @@
  * downloadLinks[postId] = direct download / drive URL for that post.
  * rateUsUrl            = your Google Play / App Store / review page.
  */
-import { funnelHdUrl, funnelRateUrl } from "@/lib/funnelConfig";
+import { funnelRateUrl } from "@/lib/funnelConfig";
 
 function getAllowedOutboundHosts() {
   return (process.env.NEXT_PUBLIC_ALLOWED_OUTBOUND_HOSTS || "")
@@ -90,7 +90,7 @@ export const postLinks: Record<string, string> = {
 const defaultDownloadLinks: Record<string, string> = Object.fromEntries(
   Array.from({ length: 2000 }, (_, i) => {
     const id = String(i + 1);
-    return [id, funnelHdUrl];
+    return [id, `https://example.com/download/post-${id}`];
   })
 );
 

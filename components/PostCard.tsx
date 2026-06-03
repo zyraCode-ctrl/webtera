@@ -1,8 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { funnelHdUrl } from "@/lib/funnelConfig";
-
 export function PostCard({
   id,
   title,
@@ -100,10 +98,8 @@ export function PostCard({
         </Link>
 
         {/* View in HD Button */}
-        <a
-          href={funnelHdUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          href={`/help/${encodeURIComponent(id)}?from=video`}
           style={{
             display: "flex",
             flexDirection: "column",
@@ -128,7 +124,7 @@ export function PostCard({
         >
           <span style={{ fontSize: "18px" }}>⬇️</span>
           <span>View in HD</span>
-        </a>
+        </Link>
       </div>
     </div>
   );

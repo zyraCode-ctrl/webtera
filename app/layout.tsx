@@ -6,6 +6,7 @@ import { AdSlot } from "@/components/AdSlot";
 import { StickyBottomAd } from "@/components/StickyBottomAd";
 import { Footer } from "@/components/Footer";
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
+import { PopunderScript } from "@/components/PopunderScript";
 import { validateProductionEnv } from "@/lib/env";
 
 validateProductionEnv();
@@ -40,6 +41,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full w-full min-w-0">
+      <head>
+        <PopunderScript />
+      </head>
       <body
         className={`${inter.variable} ${jetBrainsMono.variable} h-full min-h-dvh min-w-0 w-full max-w-full bg-transparent text-zinc-900 antialiased`}
       >

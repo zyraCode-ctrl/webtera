@@ -3,16 +3,9 @@
 type Props = {
   title: string;
   description: string;
-  showSponsorFallback: boolean;
-  sponsorUrl: string;
 };
 
-export function FunnelNavigatingOverlay({
-  title,
-  description,
-  showSponsorFallback,
-  sponsorUrl,
-}: Props) {
+export function FunnelNavigatingOverlay({ title, description }: Props) {
   return (
     <div
       role="status"
@@ -24,22 +17,6 @@ export function FunnelNavigatingOverlay({
         <div className="mx-auto h-11 w-11 animate-spin rounded-full border-[3px] border-zinc-200 border-t-violet-600" />
         <h2 className="mt-5 text-lg font-semibold tracking-tight text-zinc-950">{title}</h2>
         <p className="mt-2 text-sm leading-6 text-zinc-600">{description}</p>
-        {showSponsorFallback ? (
-          <p className="mt-4 text-xs leading-5 text-amber-800">
-            If a new tab did not open, your browser may have blocked it. Use the button below, then return
-            here—this page will continue automatically.
-          </p>
-        ) : null}
-        {showSponsorFallback ? (
-          <a
-            href={sponsorUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 inline-flex min-h-10 items-center justify-center rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-400"
-          >
-            Open sponsor tab
-          </a>
-        ) : null}
       </div>
     </div>
   );
