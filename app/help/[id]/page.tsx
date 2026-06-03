@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
-import { posts } from "@/data/posts";
 import { HelpPage } from "@/components/HelpPage";
+import { getPostById } from "@/data/posts";
+import { resolvePostIdFromParam } from "@/lib/resolvePostId";
 import { Suspense } from "react";
 
 export function generateMetadata({ params }: { params: { id: string } }) {
+  const postId = resolvePostIdFromParam(params.id);
   return {
-    title: `Help – Post #${params.id}`,
+    title: postId ? `Help – Post #${postId}` : "Help",
     robots: { index: false, follow: false },
   };
 }
@@ -15,13 +17,12 @@ export default function HelpPageRoute({
 }: {
   params: { id: string };
 }) {
-  // Validate post id exists
-  const post = posts.find((p) => p.id === params.id);
-  if (!post) notFound();
+  const postId = resolvePostIdFromParam(params.id);
+  if (!postId || !getPostById(postId)) notFound();
 
   return (
     <Suspense fallback={null}>
-      <HelpPage postId={params.id} />
+      <HelpPage postId={postId} />
     </Suspense>
   );
 }

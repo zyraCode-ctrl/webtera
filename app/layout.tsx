@@ -41,12 +41,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full w-full min-w-0">
-      <head>
-        <PopunderScript />
-      </head>
       <body
         className={`${inter.variable} ${jetBrainsMono.variable} h-full min-h-dvh min-w-0 w-full max-w-full bg-transparent text-zinc-900 antialiased`}
       >
+        <PopunderScript />
         <GoogleAnalytics />
         <Header />
         <div className="mx-auto w-full min-w-0 max-w-[1320px] px-3 py-4 sm:px-4">

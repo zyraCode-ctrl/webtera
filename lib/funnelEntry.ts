@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { sendServerEvent } from "@/lib/serverAnalytics";
 import { getRequiredEnv } from "@/lib/env";
 import { EVENTS } from "@/lib/events";
+import { encodeGoListQuery } from "@/lib/funnelRef";
 
 const COOKIE_NAME = "ig_pass";
 const FUNNEL_TTL_SECONDS = 6 * 60;
@@ -63,7 +64,9 @@ export async function issueFunnelAccess(
   const sig = await hmacSha256(secret, payloadB64);
   const token = `${payloadB64}.${bytesToBase64Url(sig)}`;
 
-  const res = NextResponse.redirect(new URL("/go?from_entry=1", req.url));
+  const goQ = encodeGoListQuery({ entry: true });
+  const goPath = goQ ? `/go?q=${encodeURIComponent(goQ)}` : "/go";
+  const res = NextResponse.redirect(new URL(goPath, req.url));
   res.cookies.set({
     name: COOKIE_NAME,
     value: token,

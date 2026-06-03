@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AdSlot } from "@/components/AdSlot";
 import type { Post } from "@/data/posts";
 import { GO_FULL_LIST_STORAGE_KEY, resetGoFullListUnlock } from "@/lib/funnelGoSession";
+import { applyGoListState, decodePostRef, readGoListState } from "@/lib/funnelRef";
 import { GoPostCard } from "./GoPostCard";
 
 const SEARCH_DEBOUNCE_MS = 320;
@@ -20,19 +21,16 @@ export function GoPostList({ posts }: { posts: Post[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [query, setQuery] = useState(() => {
-    if (typeof window === "undefined") return "";
-    return new URLSearchParams(window.location.search).get("search") ?? "";
-  });
+  const [query, setQuery] = useState(() => readGoListState(searchParams).search ?? "");
   const skipDebouncedUrlSyncRef = useRef(false);
+  const searchResultRef = useRef<HTMLDivElement>(null);
   const [showFullPostList, setShowFullPostList] = useState(false);
   const POSTS_PER_PAGE = 10;
 
   const totalPages = Math.max(1, Math.ceil(posts.length / POSTS_PER_PAGE));
 
   const safePage = useMemo(() => {
-    const raw = searchParams.get("page");
-    const n = raw ? parseInt(raw, 10) : 1;
+    const n = readGoListState(searchParams).page ?? 1;
     if (!Number.isFinite(n) || n < 1) return 1;
     return Math.min(n, totalPages);
   }, [searchParams, totalPages]);
@@ -49,7 +47,7 @@ export function GoPostList({ posts }: { posts: Post[] }) {
 
   // Restore search box when URL changes (browser Back / Forward).
   useEffect(() => {
-    const fromUrl = searchParams.get("search") ?? "";
+    const fromUrl = readGoListState(searchParams).search ?? "";
     setQuery(fromUrl);
     skipDebouncedUrlSyncRef.current = true;
   }, [searchParams]);
@@ -83,12 +81,59 @@ export function GoPostList({ posts }: { posts: Post[] }) {
     [pathname, router]
   );
 
+  const scrollToSearchResult = useCallback((searchId: string) => {
+    requestAnimationFrame(() => {
+      const postEl = document.getElementById(`go-post-${searchId}`);
+      if (postEl) {
+        postEl.scrollIntoView({ block: "center", behavior: "smooth" });
+        return;
+      }
+      searchResultRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
+  }, []);
+
+  const buildGoListParams = useCallback(
+    (trimmed: string) => {
+      const current = readGoListState(searchParams);
+      let page = current.page;
+      if (trimmed) {
+        const idx = postIndexById.get(trimmed);
+        if (idx !== undefined) {
+          const pageNum = Math.floor(idx / POSTS_PER_PAGE) + 1;
+          const bounded = Math.min(Math.max(pageNum, 1), totalPages);
+          page = bounded <= 1 ? undefined : bounded;
+        }
+      } else {
+        page = undefined;
+      }
+      return applyGoListState(searchParams, {
+        search: trimmed || undefined,
+        page,
+      });
+    },
+    [postIndexById, searchParams, totalPages]
+  );
+
+  const syncQueryToUrl = useCallback(
+    (trimmed: string, options?: { scrollToResult?: boolean }) => {
+      const next = buildGoListParams(trimmed);
+      if (searchParamsSortedStr(next) !== searchParamsSortedStr(searchParams)) {
+        replaceGoUrl(next);
+      }
+      if (options?.scrollToResult && trimmed) scrollToSearchResult(trimmed);
+    },
+    [buildGoListParams, replaceGoUrl, scrollToSearchResult, searchParams]
+  );
+
   function goToPage(page: number) {
     const p = Math.min(Math.max(page, 1), totalPages);
-    const params = new URLSearchParams(searchParams.toString());
-    if (p <= 1) params.delete("page");
-    else params.set("page", String(p));
-    replaceGoUrl(params);
+    const current = readGoListState(searchParams);
+    replaceGoUrl(
+      applyGoListState(searchParams, {
+        search: current.search,
+        page: p <= 1 ? undefined : p,
+      })
+    );
   }
 
   // Keep ?search= and ?page= in history while typing so Back restores search + correct pager slice.
@@ -99,37 +144,22 @@ export function GoPostList({ posts }: { posts: Post[] }) {
         return;
       }
 
-      const trimmed = query.trim();
-      const next = new URLSearchParams(searchParams.toString());
-
-      if (!trimmed) {
-        next.delete("search");
-      } else {
-        next.set("search", trimmed);
-        const idx = postIndexById.get(trimmed);
-        if (idx !== undefined) {
-          const pageNum = Math.floor(idx / POSTS_PER_PAGE) + 1;
-          const bounded = Math.min(Math.max(pageNum, 1), totalPages);
-          if (bounded <= 1) next.delete("page");
-          else next.set("page", String(bounded));
-        }
-      }
-
-      if (searchParamsSortedStr(next) !== searchParamsSortedStr(searchParams)) {
-        replaceGoUrl(next);
-      }
+      syncQueryToUrl(query.trim());
     }, SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(id);
-  }, [pathname, postIndexById, query, replaceGoUrl, searchParams, totalPages]);
+  }, [query, syncQueryToUrl]);
 
   // Fresh funnel arrival (?from_entry=1): search-only mode. After visiting a post, sessionStorage unlocks the list.
   useEffect(() => {
-    if (searchParams.get("from_entry") === "1") {
+    const listState = readGoListState(searchParams);
+    if (listState.entry) {
       resetGoFullListUnlock();
       setShowFullPostList(false);
-      const next = new URLSearchParams(searchParams.toString());
-      next.delete("from_entry");
       skipDebouncedUrlSyncRef.current = true;
+      const next = applyGoListState(searchParams, {
+        search: listState.search,
+        page: listState.page,
+      });
       const q = next.toString();
       router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
       return;
@@ -145,14 +175,28 @@ export function GoPostList({ posts }: { posts: Post[] }) {
     const hash = typeof window !== "undefined" ? window.location.hash : "";
     const match = /^#post-(.+)$/.exec(hash);
     if (match) {
-      const postId = decodeURIComponent(match[1]);
+      const anchor = decodeURIComponent(match[1]);
+      const postId = decodePostRef(anchor) ?? (/^\d+$/.test(anchor) ? anchor : undefined);
+      if (!postId) return;
       requestAnimationFrame(() => {
         document.getElementById(`go-post-${postId}`)?.scrollIntoView({ block: "center", behavior: "auto" });
       });
       return;
     }
+
+    const urlSearch = readGoListState(searchParams).search?.trim();
+    if (urlSearch) {
+      scrollToSearchResult(urlSearch);
+      return;
+    }
+
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [safePage, searchParams]);
+  }, [safePage, searchParams, scrollToSearchResult]);
+
+  function handleSearchSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    syncQueryToUrl(query.trim(), { scrollToResult: true });
+  }
 
   return (
     <section className="mx-auto w-full min-w-0 max-w-3xl space-y-4 px-1 sm:space-y-5 sm:px-0">
@@ -200,7 +244,7 @@ export function GoPostList({ posts }: { posts: Post[] }) {
           <div className="mt-3 sm:mt-4">
             <AdSlot type="banner" variant="topBanner" />
           </div>
-          <div className="mt-4 sm:mt-5">
+          <form className="mt-4 sm:mt-5" onSubmit={handleSearchSubmit}>
             <label
               htmlFor="go-post-search"
               className="mb-2 block text-center text-sm font-semibold text-violet-950 sm:text-[13px]"
@@ -230,11 +274,11 @@ export function GoPostList({ posts }: { posts: Post[] }) {
                 />
               </div>
             </div>
-          </div>
+          </form>
         </div>
 
         {normalizedQuery ? (
-          <div className="surface-panel p-4 sm:p-5">
+          <div ref={searchResultRef} className="surface-panel scroll-mt-24 p-4 sm:p-5">
             {resultPost ? (
               <div className="space-y-4">
                 <GoPostCard

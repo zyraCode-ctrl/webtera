@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { funnelOutPath } from "../lib/funnelRef";
 import {
   FUNNEL_GATE_TO_NEXT_MS,
   openGateThenCallback,
@@ -20,14 +21,15 @@ function testDeps(navigateTo: (url: string) => void) {
 
 test("openGateThenNavigate invokes navigateTo after FUNNEL_GATE_TO_NEXT_MS", async () => {
   const navigated: string[] = [];
-  const { popupLikelyBlocked, cancel } = openGateThenNavigate("/out/7?from=video", undefined, {
+  const target = funnelOutPath("7", "video");
+  const { popupLikelyBlocked, cancel } = openGateThenNavigate(target, undefined, {
     ...testDeps((u) => navigated.push(u)),
   });
 
   assert.equal(popupLikelyBlocked, false);
   assert.deepEqual(navigated, []);
   await new Promise((r) => setTimeout(r, FUNNEL_GATE_TO_NEXT_MS + 80));
-  assert.deepEqual(navigated, ["/out/7?from=video"]);
+  assert.deepEqual(navigated, [target]);
   cancel();
 });
 

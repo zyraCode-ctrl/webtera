@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { funnelHelpPath } from "@/lib/funnelRef";
+
 export function PostCard({
   id,
   title,
@@ -68,7 +70,7 @@ export function PostCard({
       >
       {/* View Button */}
         <Link
-          href={`/help/${encodeURIComponent(id)}?from=video`}
+          href={funnelHelpPath(id, "video")}
           style={{
             display: "flex",
             flexDirection: "column",
@@ -99,7 +101,7 @@ export function PostCard({
 
         {/* View in HD Button */}
         <Link
-          href={`/help/${encodeURIComponent(id)}?from=video`}
+          href={funnelHelpPath(id, "video")}
           style={{
             display: "flex",
             flexDirection: "column",

@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
-import { getPostById, posts } from "@/data/posts";
+import { getPostById } from "@/data/posts";
 import { LinkLoader } from "@/components/LinkLoader";
+import { decodeFunnelFrom } from "@/lib/funnelRef";
+import { resolvePostIdFromParam } from "@/lib/resolvePostId";
 
 export const metadata = {
   title: "Almost there",
@@ -12,12 +14,15 @@ export default function OutPage({
   searchParams,
 }: {
   params: { id: string };
-  searchParams: { from?: string };
+  searchParams: { from?: string; f?: string };
 }) {
-  const post = getPostById(params.id);
+  const postId = resolvePostIdFromParam(params.id);
+  const post = postId ? getPostById(postId) : undefined;
   if (!post) notFound();
 
-  const from = searchParams.from === "download" ? "download" : "video";
+  const from =
+    decodeFunnelFrom(searchParams.f) ??
+    (searchParams.from === "download" ? "download" : "video");
 
-  return <LinkLoader postId={params.id} from={from} />;
+  return <LinkLoader postId={postId} from={from} />;
 }

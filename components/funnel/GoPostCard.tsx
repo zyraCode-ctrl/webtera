@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { FunnelNavigatingOverlay } from "@/components/FunnelNavigatingOverlay";
 import { trackEvent } from "@/lib/analytics";
 import { unlockGoFullListForSession } from "@/lib/funnelGoSession";
+import { encodePostRef, funnelHelpPath, funnelPostPath } from "@/lib/funnelRef";
 import { openGateChainThenNavigate, openGateThenNavigate } from "@/lib/funnelNavigate";
 import { EVENTS } from "@/lib/events";
 
@@ -17,7 +18,7 @@ function pinGoListAnchorForBack(postId: string) {
   if (typeof window === "undefined") return;
   if (window.location.pathname !== "/go") return;
   const base = `${window.location.pathname}${window.location.search}`;
-  const url = `${base}#post-${encodeURIComponent(postId)}`;
+  const url = `${base}#post-${encodeURIComponent(encodePostRef(postId))}`;
   try {
     window.history.replaceState(window.history.state ?? {}, "", url);
   } catch {
@@ -74,10 +75,10 @@ export function GoPostCard({
     };
   }, []);
 
-  const fullVideoHref = `/help/${encodeURIComponent(id)}?from=video`;
+  const fullVideoHref = funnelHelpPath(id, "video");
   const playTargetHref = previewVideoUrl
-    ? `/post/${encodeURIComponent(id)}#preview`
-    : `/help/${encodeURIComponent(id)}?from=video`;
+    ? `${funnelPostPath(id)}#preview`
+    : funnelHelpPath(id, "video");
 
   function beginFullVideoNavigation() {
     if (isRedirecting) return;

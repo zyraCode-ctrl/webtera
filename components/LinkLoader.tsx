@@ -6,6 +6,7 @@ import { AdSlot } from "@/components/AdSlot";
 import { trackEvent } from "@/lib/analytics";
 import { LINK_LOADER_SECONDS } from "@/lib/funnelTiming";
 import { EVENTS } from "@/lib/events";
+import { funnelHelpPath, type FunnelFrom } from "@/lib/funnelRef";
 
 const DURATION = LINK_LOADER_SECONDS;
 
@@ -14,7 +15,7 @@ export function LinkLoader({
   from,
 }: {
   postId: string;
-  from: string;
+  from: FunnelFrom;
 }) {
   const router = useRouter();
   const [seconds, setSeconds] = useState(DURATION);
@@ -36,7 +37,7 @@ export function LinkLoader({
         postId,
         source: from,
       });
-      router.push(`/help/${encodeURIComponent(postId)}?from=${encodeURIComponent(from)}`);
+      router.push(funnelHelpPath(postId, from));
       return;
     }
     const t = setTimeout(() => setSeconds((s) => s - 1), 1000);

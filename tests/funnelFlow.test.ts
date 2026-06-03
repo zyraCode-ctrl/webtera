@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { getPostById, posts } from "../data/posts";
+import { funnelHelpPath } from "../lib/funnelRef";
 import { FUNNEL_GATE_TO_NEXT_MS } from "../lib/funnelNavigate";
 import { LINK_LOADER_SECONDS } from "../lib/funnelTiming";
 
@@ -38,16 +39,15 @@ test("funnel flow: Link button targets resolve for exemplar posts (no outbound a
   assert.ok(s28.url?.includes("xvideos"), "explicit override preserved");
 });
 
-test("funnel flow: LinkLoader help path convention matches router.push shape", () => {
-  const postId = "32";
-  const from = "video";
-  const expected = `/help/${encodeURIComponent(postId)}?from=${encodeURIComponent(from)}`;
-  assert.equal(expected, "/help/32?from=video");
+test("funnel flow: LinkLoader help path uses encoded funnel href", () => {
+  const href = funnelHelpPath("32", "video");
+  assert.match(href, /^\/help\/wt1\./);
+  assert.match(href, /\?f=/);
 });
 
 test("funnel flow: Full Video links directly to help (no /out loader)", () => {
-  const id = "32";
-  assert.equal(`/help/${encodeURIComponent(id)}?from=video`, "/help/32?from=video");
+  const href = funnelHelpPath("32", "video");
+  assert.match(href, /^\/help\/wt1\./);
 });
 
 test("funnel constants: timing is coherent", () => {

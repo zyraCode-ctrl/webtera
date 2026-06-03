@@ -4,15 +4,19 @@ import { AdSlot } from "@/components/AdSlot";
 import { EmbeddedInlineVideo } from "@/components/EmbeddedInlineVideo";
 import { PostCard } from "@/components/PostCard";
 import { getPostById, posts } from "@/data/posts";
+import { funnelHelpPath } from "@/lib/funnelRef";
+import { resolvePostIdFromParam } from "@/lib/resolvePostId";
 
 export function generateMetadata({ params }: { params: { id: string } }) {
-  const post = getPostById(params.id);
+  const postId = resolvePostIdFromParam(params.id);
+  const post = postId ? getPostById(postId) : undefined;
   if (!post) return { title: "Post" };
   return { title: post.title };
 }
 
 export default function PostPage({ params }: { params: { id: string } }) {
-  const post = getPostById(params.id);
+  const postId = resolvePostIdFromParam(params.id);
+  const post = postId ? getPostById(postId) : undefined;
   if (!post) notFound();
 
   const related = posts.filter((p) => p.id !== post.id).slice(0, 3);
@@ -46,7 +50,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
 
       <div className="flex justify-center px-1 py-1 sm:px-0 sm:py-2">
         <Link
-          href={`/help/${encodeURIComponent(post.id)}?from=video`}
+          href={funnelHelpPath(post.id, "video")}
           className="inline-flex w-full min-h-11 max-w-full items-center justify-center rounded-lg bg-zinc-900 px-4 py-3 text-center text-sm font-medium text-white shadow-sm hover:bg-zinc-800 sm:max-w-none"
         >
           Watch Full Video

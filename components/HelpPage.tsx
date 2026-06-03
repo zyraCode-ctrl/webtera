@@ -9,6 +9,7 @@ import { toolContent } from "@/data/toolContent";
 import { tools } from "@/data/tools";
 import { getPostLinkStatus, getDownloadLinkStatus, rateUsUrl } from "@/data/links";
 import { trackEvent } from "@/lib/analytics";
+import { decodeFunnelFrom } from "@/lib/funnelRef";
 import { openGateThenNavigate } from "@/lib/funnelNavigate";
 import { getPostMediaPresentation } from "@/lib/postMediaUrl";
 import { EVENTS } from "@/lib/events";
@@ -277,7 +278,9 @@ function HelpVideoMediaSection({
 
 export function HelpPage({ postId }: Props) {
   const searchParams = useSearchParams();
-  const from = searchParams.get("from");
+  const fromRaw = searchParams.get("f") ?? searchParams.get("from");
+  const fromDecoded = decodeFunnelFrom(fromRaw);
+  const from = fromDecoded ?? (fromRaw === "download" ? "download" : fromRaw === "video" ? "video" : null);
   const videoFunnel = from === "video";
   const isFunnel = from === "video" || from === "download";
 
