@@ -17,10 +17,11 @@ export default function OutPage({
   searchParams: { from?: string; f?: string };
 }) {
   const postId = resolvePostIdFromParam(params.id);
-  const post = postId ? getPostById(postId) : undefined;
+  if (!postId) notFound();
+  const post = getPostById(postId);
   if (!post) notFound();
 
-  const from =
+  const from: "video" | "download" =
     decodeFunnelFrom(searchParams.f) ??
     (searchParams.from === "download" ? "download" : "video");
 
