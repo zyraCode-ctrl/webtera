@@ -28,6 +28,18 @@ const TITLE_SUFFIXES = [
   "Repeatable system",
 ];
 
+const PREVIEW_OPENERS = [
+  "Here's a quick preview of the core idea and what you'll learn in the full video.",
+  "A common mistake most people make—this preview shows the setup and the fix direction.",
+  "A short walkthrough preview that leads into the full step-by-step video.",
+  "Preview of the results and the key framework—full video includes the complete breakdown.",
+  "A focused preview that sets up the main lesson—watch the full clip for the full method.",
+  "This snippet introduces the mindset shift; the full video walks through every detail.",
+  "See the hook and the promise here—the complete breakdown is in the full video.",
+  "A tight preview of the workflow; the full version includes templates and examples.",
+  "Quick context and one actionable angle—expand in the full video for the rest.",
+  "Teaser of the before/after; the full video shows how to get there consistently.",
+];
 
 export const posts: Post[] = Array.from({ length: 2000 }, (_, i) => {
   const n = i + 1;
@@ -35,6 +47,7 @@ export const posts: Post[] = Array.from({ length: 2000 }, (_, i) => {
   return {
     id,
     title: `Post ${n}: ${TITLE_SUFFIXES[i % TITLE_SUFFIXES.length]}`,
+    preview: PREVIEW_OPENERS[i % PREVIEW_OPENERS.length],
     hasThumb: hasMediaKind(id, "thumb"),
     hasPreviewVideo: hasMediaKind(id, "preview"),
     videoLink: `https://example.com/video/${n}`,
