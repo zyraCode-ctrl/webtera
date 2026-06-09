@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdSlot } from "@/components/AdSlot";
-import { EmbeddedInlineVideo } from "@/components/EmbeddedInlineVideo";
+import { ProtectedMediaVideo } from "@/components/media/ProtectedMediaVideo";
+import { hasMediaKind } from "@/lib/mediaApi";
 import { PostCard } from "@/components/PostCard";
 import { getPostById, posts } from "@/data/posts";
 import { funnelHelpPath } from "@/lib/funnelRef";
@@ -36,11 +37,12 @@ export default function PostPage({ params }: { params: { id: string } }) {
         <p className="mt-3 text-sm leading-7 text-zinc-700">{post.preview}</p>
       </section>
 
-      {post.previewVideoUrl ? (
+      {hasMediaKind(post.id, "preview") ? (
         <section id="preview" className="surface-panel scroll-mt-24 p-6">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Short preview</h2>
-          <EmbeddedInlineVideo
-            src={post.previewVideoUrl}
+          <ProtectedMediaVideo
+            postId={post.id}
+            kind="preview"
             className="mt-4 aspect-video w-full max-h-[min(70vh,720px)] rounded-xl border border-zinc-200 bg-black object-contain shadow-md select-none"
           />
         </section>

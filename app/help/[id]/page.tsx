@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { HelpPage } from "@/components/HelpPage";
 import { getPostById } from "@/data/posts";
+import { resolveHelpExternalLink, resolveHelpVideoPresentation } from "@/lib/mediaApi";
 import { resolvePostIdFromParam } from "@/lib/resolvePostId";
 import { Suspense } from "react";
 
@@ -22,7 +23,11 @@ export default function HelpPageRoute({
 
   return (
     <Suspense fallback={null}>
-      <HelpPage postId={postId} />
+      <HelpPage
+        postId={postId}
+        helpVideo={resolveHelpVideoPresentation(postId)}
+        helpExternalLink={resolveHelpExternalLink(postId)}
+      />
     </Suspense>
   );
 }

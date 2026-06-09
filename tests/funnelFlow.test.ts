@@ -12,18 +12,18 @@ test("posts registry: expected length and getPostById", () => {
   assert.equal(getPostById("bogus"), undefined);
 });
 
-test("funnel flow: post 32 optional previewVideoUrl exists in post data (list uses thumbnail only)", () => {
+test("funnel flow: post 32 exposes preview flag without public media URLs in post data", () => {
   const p = getPostById("32");
   assert.ok(p);
-  assert.ok(p!.previewVideoUrl?.includes(".mp4"));
-  assert.ok(p!.previewVideoUrl!.includes("pub-ff1f131c0a954a2ca3d1dfea676addb8.r2.dev"));
+  assert.equal(p!.hasPreviewVideo, true);
+  assert.equal("imageUrl" in (p as object), false);
 });
 
-test("funnel flow: post 33 uses PNG thumbnail on list; full video only on help page", () => {
+test("funnel flow: post 33 has thumb flag without preview video in list data", () => {
   const p = getPostById("33");
   assert.ok(p);
-  assert.ok(p!.imageUrl.endsWith(".png"));
-  assert.equal(p!.previewVideoUrl, undefined);
+  assert.equal(p!.hasThumb, true);
+  assert.equal(p!.hasPreviewVideo, false);
 });
 
 test("funnel flow: Link button targets resolve for exemplar posts (no outbound allowlist)", async () => {

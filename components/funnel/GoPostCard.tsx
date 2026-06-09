@@ -7,7 +7,9 @@ import { useRouter } from "next/navigation";
 import { FunnelNavigatingOverlay } from "@/components/FunnelNavigatingOverlay";
 import { trackEvent } from "@/lib/analytics";
 import { unlockGoFullListForSession } from "@/lib/funnelGoSession";
+import { hasMediaKind } from "@/lib/mediaApi";
 import { encodePostRef, funnelHelpPath, funnelPostPath } from "@/lib/funnelRef";
+import { ProtectedMediaImage } from "@/components/media/ProtectedMediaImage";
 import { openGateChainThenNavigate, openGateThenNavigate } from "@/lib/funnelNavigate";
 import { EVENTS } from "@/lib/events";
 
@@ -30,17 +32,13 @@ export function GoPostCard({
   id,
   title,
   preview,
-  imageUrl,
-  previewVideoUrl,
 }: {
   id: string;
   title: string;
   preview: string;
-  imageUrl: string;
-  previewVideoUrl?: string;
 }) {
+  const hasPreviewVideo = hasMediaKind(id, "preview");
   const router = useRouter();
-  const [mediaFailed, setMediaFailed] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [overlayVariant, setOverlayVariant] = useState<OverlayVariant>("full");
   const cancelNavigateRef = useRef<(() => void) | null>(null);
@@ -76,7 +74,7 @@ export function GoPostCard({
   }, []);
 
   const fullVideoHref = funnelHelpPath(id, "video");
-  const playTargetHref = previewVideoUrl
+  const playTargetHref = hasPreviewVideo
     ? `${funnelPostPath(id)}#preview`
     : funnelHelpPath(id, "video");
 
@@ -148,59 +146,31 @@ export function GoPostCard({
       {isRedirecting ? (
         <FunnelNavigatingOverlay title={overlayTitle} description={overlayDescription} />
       ) : null}
-      {!mediaFailed ? (
-        <div className="relative mb-3 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100">
-          <img
-            src={imageUrl}
-            alt={`${title} preview`}
-            loading="lazy"
-            className="h-auto w-full object-cover"
-            onError={() => setMediaFailed(true)}
-          />
-          <div
-            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-black/25"
-            aria-hidden
-          />
-          <div className="absolute inset-0 flex items-center justify-center p-3">
-            <button
-              type="button"
-              onClick={handlePlayClick}
-              disabled={isRedirecting}
-              aria-label="Play preview"
-              className={[
-                "pointer-events-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/95 text-violet-700 shadow-lg ring-4 ring-white/30 transition hover:scale-105 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500 active:scale-[0.98] motion-reduce:transition-none sm:h-[4.5rem] sm:w-[4.5rem]",
-                isRedirecting ? "pointer-events-none opacity-60" : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            >
-              <svg aria-hidden className="ml-1 h-8 w-8 sm:h-9 sm:w-9" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8 5v14l11-7L8 5z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="mb-3 flex min-h-36 flex-col items-center justify-center gap-4 rounded-xl border border-zinc-200 bg-zinc-100 px-4 py-5">
-          <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">Preview unavailable</span>
+      <div className="relative mb-3 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100">
+        <ProtectedMediaImage postId={id} alt={`${title} preview`} className="h-auto w-full object-cover" />
+        <div
+          className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-black/25"
+          aria-hidden
+        />
+        <div className="absolute inset-0 flex items-center justify-center p-3">
           <button
             type="button"
             onClick={handlePlayClick}
             disabled={isRedirecting}
             aria-label="Play preview"
             className={[
-              "flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-violet-700 shadow-md ring-2 ring-violet-200/80 transition hover:bg-white active:scale-[0.98]",
+              "pointer-events-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/95 text-violet-700 shadow-lg ring-4 ring-white/30 transition hover:scale-105 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500 active:scale-[0.98] motion-reduce:transition-none sm:h-[4.5rem] sm:w-[4.5rem]",
               isRedirecting ? "pointer-events-none opacity-60" : "",
             ]
               .filter(Boolean)
               .join(" ")}
           >
-            <svg aria-hidden className="ml-0.5 h-7 w-7" viewBox="0 0 24 24" fill="currentColor">
+            <svg aria-hidden className="ml-1 h-8 w-8 sm:h-9 sm:w-9" viewBox="0 0 24 24" fill="currentColor">
               <path d="M8 5v14l11-7L8 5z" />
             </svg>
           </button>
         </div>
-      )}
+      </div>
       <h2 className="text-base font-semibold text-zinc-950">{title}</h2>
       <p className="mt-2 text-sm leading-6 text-zinc-600">{preview}</p>
 

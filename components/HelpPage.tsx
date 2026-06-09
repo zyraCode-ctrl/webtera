@@ -8,13 +8,18 @@ import { FunnelNavigatingOverlay } from "@/components/FunnelNavigatingOverlay";
 import { toolContent } from "@/data/toolContent";
 import { tools } from "@/data/tools";
 import { getPostLinkStatus, getDownloadLinkStatus, rateUsUrl } from "@/data/links";
+import { ProtectedMediaVideo } from "@/components/media/ProtectedMediaVideo";
 import { trackEvent } from "@/lib/analytics";
 import { decodeFunnelFrom } from "@/lib/funnelRef";
 import { openGateThenNavigate } from "@/lib/funnelNavigate";
-import { getPostMediaPresentation } from "@/lib/postMediaUrl";
+import type { HelpVideoPresentation } from "@/lib/mediaApi";
 import { EVENTS } from "@/lib/events";
 
-type Props = { postId: string };
+type Props = {
+  postId: string;
+  helpVideo: HelpVideoPresentation;
+  helpExternalLink?: string;
+};
 type GuideStage = "top" | "near" | "reached";
 
 const TOOL_SLUGS = Object.keys(toolContent) as Array<keyof typeof toolContent>;
@@ -22,9 +27,19 @@ const TOOL_SLUGS = Object.keys(toolContent) as Array<keyof typeof toolContent>;
 /** Show the CTA card right after the 6th tool (index 5). */
 const CTA_TOOL_INDEX = 5;
 
-/** For ?from=video, video block is placed after tool index 1–3 (2nd–4th tool), chosen once per page load. */
+/** For ?from=video, video block is placed after tool index 1–3 (2nd–4th tool). */
 const VIDEO_INSERT_MIN_IDX = 1;
 const VIDEO_INSERT_MAX_IDX = 3;
+
+/** Stable per-post slot — must match on server and client (no Math.random during render). */
+function stableVideoInsertIdx(postId: string) {
+  let h = 0;
+  for (let i = 0; i < postId.length; i++) {
+    h = (h * 31 + postId.charCodeAt(i)) >>> 0;
+  }
+  const span = VIDEO_INSERT_MAX_IDX - VIDEO_INSERT_MIN_IDX + 1;
+  return VIDEO_INSERT_MIN_IDX + (h % span);
+}
 
 /** In-page anchor for video funnel navigation (sticky bar scroll target). */
 const HELP_VIDEO_SECTION_ID = "help-post-video";
@@ -35,8 +50,7 @@ const HELP_PLAY_GATE_SECONDS = 5;
 type VideoMediaProps = {
   postId: string;
   from: string | null;
-  postLink?: string;
-  postLinkBlocked: boolean;
+  helpVideo: HelpVideoPresentation;
   downloadLink?: string;
   downloadLinkBlocked: boolean;
   rateUs: string;
@@ -63,31 +77,25 @@ function HelpVideoFunnelIntro({ postId }: { postId: string }) {
 function HelpVideoMediaSection({
   postId,
   from,
-  postLink,
-  postLinkBlocked,
+  helpVideo,
   downloadLink,
   downloadLinkBlocked,
   rateUs,
   onGatedExternalLink,
 }: VideoMediaProps) {
-  const presentation = postLink ? getPostMediaPresentation(postLink) : null;
-  const [videoErrored, setVideoErrored] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const playGateCompletedRef = useRef(false);
   const [playGateOpen, setPlayGateOpen] = useState(false);
   const [playGateSecondsLeft, setPlayGateSecondsLeft] = useState(HELP_PLAY_GATE_SECONDS);
 
   useEffect(() => {
-    setVideoErrored(false);
     playGateCompletedRef.current = false;
     setPlayGateOpen(false);
     setPlayGateSecondsLeft(HELP_PLAY_GATE_SECONDS);
-  }, [postId, postLink]);
+  }, [postId, helpVideo]);
 
   const handlePlayGateContinue = useCallback(() => {
     playGateCompletedRef.current = true;
     setPlayGateOpen(false);
-    void videoRef.current?.play();
   }, []);
 
   useEffect(() => {
@@ -111,9 +119,7 @@ function HelpVideoMediaSection({
   }, [playGateOpen, playGateSecondsLeft, handlePlayGateContinue]);
 
   function handleVideoPlayAttempt() {
-    const el = videoRef.current;
-    if (!el || playGateCompletedRef.current) return;
-    el.pause();
+    if (playGateCompletedRef.current) return;
     setPlayGateSecondsLeft(HELP_PLAY_GATE_SECONDS);
     setPlayGateOpen(true);
   }
@@ -136,7 +142,7 @@ function HelpVideoMediaSection({
       <p className="mx-auto mt-2 max-w-md text-sm text-zinc-600">Plays inline here when the link allows it.</p>
 
       <div className="mx-auto mt-6 w-full max-w-3xl text-left">
-        {presentation?.kind === "direct-video" ? (
+        {helpVideo?.mode === "gated" ? (
           <div className="relative">
             {playGateOpen ? (
               <div
@@ -166,58 +172,28 @@ function HelpVideoMediaSection({
                 </button>
               </div>
             ) : null}
-            <video
-              ref={videoRef}
-              key={presentation.url}
-              src={presentation.url}
-              controls
-              controlsList="nodownload"
-              playsInline
-              preload="metadata"
-              draggable={false}
-              onContextMenu={(e) => e.preventDefault()}
+            <ProtectedMediaVideo
+              postId={postId}
+              kind="full"
               className="aspect-video max-h-[min(70vh,720px)] w-full rounded-xl border border-zinc-200 bg-black object-contain shadow-lg select-none"
               onPlay={handleVideoPlayAttempt}
-              onError={() => setVideoErrored(true)}
             />
-            {videoErrored ? (
-              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm text-amber-950">
-                <p className="font-medium">This video did not load in the browser.</p>
-                <p className="mt-2 text-amber-900/95">
-                  The player is pointed at your R2 URL, but the file request failed (wrong path, bucket error, missing CORS, or bad status like 500/403).
-                  Check the <b>Network</b> tab for the <code className="rounded bg-amber-100/90 px-1">.mp4</code> request.
-                </p>
-                <a
-                  href={presentation.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 inline-flex text-sm font-semibold text-violet-700 underline decoration-violet-300 underline-offset-2 hover:text-violet-900"
-                >
-                  Open video URL in new tab
-                </a>
-                {videoPlaybackHelp}
-              </div>
-            ) : null}
           </div>
-        ) : presentation?.kind === "iframe-embed" ? (
+        ) : helpVideo?.mode === "iframe" ? (
           <iframe
-            src={presentation.url}
+            src={helpVideo.url}
             title={`Video embed — post ${postId}`}
             className="aspect-video w-full rounded-xl border border-zinc-200 bg-zinc-950 shadow-lg"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
             allowFullScreen
           />
-        ) : postLinkBlocked ? (
-          <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            This post&apos;s media link isn&apos;t available (blocked host or invalid URL).
-          </p>
-        ) : presentation?.kind === "external" ? (
+        ) : helpVideo?.mode === "external" ? (
           <div className="space-y-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-center">
             <p className="text-sm text-zinc-600">
               This post opens on an external site. Use the button for a sponsor step, then we&apos;ll take you there.
             </p>
             <a
-              href={presentation.url}
+              href={helpVideo.url}
               rel="noopener noreferrer"
               onClick={onGatedExternalLink}
               className="inline-flex min-h-11 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 px-6 py-3 text-sm font-medium text-white transition hover:brightness-110 active:scale-[0.98]"
@@ -276,7 +252,7 @@ function HelpVideoMediaSection({
   );
 }
 
-export function HelpPage({ postId }: Props) {
+export function HelpPage({ postId, helpVideo, helpExternalLink }: Props) {
   const searchParams = useSearchParams();
   const fromRaw = searchParams.get("f") ?? searchParams.get("from");
   const fromDecoded = decodeFunnelFrom(fromRaw);
@@ -292,19 +268,7 @@ export function HelpPage({ postId }: Props) {
   const pageRef = useRef<HTMLDivElement>(null);
   const postLinkCtaRef = useRef<HTMLDivElement>(null);
   const ctaBoxRef = useRef<HTMLDivElement>(null);
-  const videoSlotRef = useRef<{ postId: string; idx: number } | null>(null);
-  let videoInsertAfterIdx = VIDEO_INSERT_MIN_IDX;
-  if (videoFunnel) {
-    if (!videoSlotRef.current || videoSlotRef.current.postId !== postId) {
-      videoSlotRef.current = {
-        postId,
-        idx:
-          VIDEO_INSERT_MIN_IDX +
-          Math.floor(Math.random() * (VIDEO_INSERT_MAX_IDX - VIDEO_INSERT_MIN_IDX + 1)),
-      };
-    }
-    videoInsertAfterIdx = videoSlotRef.current.idx;
-  }
+  const videoInsertAfterIdx = videoFunnel ? stableVideoInsertIdx(postId) : VIDEO_INSERT_MIN_IDX;
 
   // Reveal box after user has scrolled through content (download funnel legacy layout only).
   useEffect(() => {
@@ -335,8 +299,16 @@ export function HelpPage({ postId }: Props) {
   }, []);
 
   function handlePostLinkClick(e: MouseEvent<HTMLAnchorElement>) {
-    if (!postLink) return;
     if (isGateNavigating) return;
+
+    const target = helpExternalLink ?? postLink;
+    if (!target) {
+      if (helpVideo?.mode === "gated") {
+        e.preventDefault();
+        handleJumpToVideo();
+      }
+      return;
+    }
 
     e.preventDefault();
 
@@ -350,7 +322,7 @@ export function HelpPage({ postId }: Props) {
     cancelNavigateRef.current?.();
     setIsGateNavigating(true);
 
-    const { cancel } = openGateThenNavigate(postLink);
+    const { cancel } = openGateThenNavigate(target);
     cancelNavigateRef.current = cancel;
   }
 
@@ -532,8 +504,7 @@ export function HelpPage({ postId }: Props) {
                 <HelpVideoMediaSection
                   postId={postId}
                   from={from}
-                  postLink={postLink}
-                  postLinkBlocked={postLinkStatus.blocked}
+                  helpVideo={helpVideo}
                   downloadLink={downloadLink}
                   downloadLinkBlocked={downloadLinkStatus.blocked}
                   rateUs={rateUsUrl}
@@ -609,9 +580,9 @@ export function HelpPage({ postId }: Props) {
                         {downloadLinkStatus.blocked ? "Blocked (unsafe link)" : "No Download"}
                       </span>
                     )}
-                    {postLink ? (
+                    {helpExternalLink || postLink ? (
                       <a
-                        href={postLink}
+                        href={helpExternalLink ?? postLink}
                         rel="noopener noreferrer"
                         onClick={(e) => {
                           handlePostLinkClick(e);
@@ -620,6 +591,14 @@ export function HelpPage({ postId }: Props) {
                       >
                         Link
                       </a>
+                    ) : helpVideo?.mode === "gated" ? (
+                      <button
+                        type="button"
+                        onClick={handleJumpToVideo}
+                        className="inline-flex min-h-11 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 px-4 py-3 text-sm font-medium text-white transition hover:brightness-110 active:scale-[0.98]"
+                      >
+                        Link
+                      </button>
                     ) : (
                       <span className="inline-flex min-h-11 items-center justify-center rounded-lg bg-zinc-200 px-4 py-3 text-sm font-medium text-zinc-600">
                         {postLinkStatus.blocked ? "Blocked (unsafe link)" : "No Link"}

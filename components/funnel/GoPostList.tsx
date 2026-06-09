@@ -285,8 +285,6 @@ export function GoPostList({ posts }: { posts: Post[] }) {
                   id={resultPost.id}
                   title={resultPost.title}
                   preview={resultPost.preview}
-                  imageUrl={resultPost.imageUrl}
-                  previewVideoUrl={resultPost.previewVideoUrl}
                 />
                 <AdSlot type="banner" variant="topBanner" />
               </div>
@@ -307,8 +305,6 @@ export function GoPostList({ posts }: { posts: Post[] }) {
                 id={p.id}
                 title={p.title}
                 preview={p.preview}
-                imageUrl={p.imageUrl}
-                previewVideoUrl={p.previewVideoUrl}
               />
               {shouldShowAdAfterOnCurrentPage(idx + 1) ? (
                 <AdSlot type="banner" variant="topBanner" />

@@ -14,9 +14,14 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
-    "check-media": "node scripts/check-media-url.mjs"
+    "check-media": "node scripts/check-media-url.mjs",
+    "sync-r2": "node scripts/sync-r2-index.mjs",
+    "list-r2": "node scripts/list-r2-objects.mjs",
+    "mp4-codec": "node scripts/mp4-codec-hint.mjs",
+    "r2-report": "node scripts/r2-sync-report.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1060.0",
     "@types/marked": "^5.0.2",
     "@types/qrcode": "^1.5.6",
     "@upstash/redis": "^1.37.0",
