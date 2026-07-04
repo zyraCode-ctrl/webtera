@@ -1,15 +1,36 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getIgFunnelSecret, hasValidIgPass, IG_PASS_COOKIE } from "@/lib/funnelAuth";
+import {
+  applyFunnelPassCookies,
+  decodeIgPassPayload,
+  getIgFunnelSecret,
+  hasValidIgPass,
+  IG_PASS_QUERY_PARAM,
+  verifyIgPassToken,
+} from "@/lib/funnelAuth";
 
 export async function middleware(req: NextRequest) {
   const secret = getIgFunnelSecret();
   if (!secret) {
     return NextResponse.redirect(new URL("/", req.url));
   }
-  const token = req.cookies.get(IG_PASS_COOKIE)?.value;
-  const ok = token ? await hasValidIgPass(req) : false;
-  if (ok) return NextResponse.next();
+
+  if (await hasValidIgPass(req)) {
+    return NextResponse.next();
+  }
+
+  // Meta / Facebook in-app browser: cookie from entry redirect is often missing — bootstrap from URL token.
+  const urlToken = req.nextUrl.searchParams.get(IG_PASS_QUERY_PARAM);
+  if (urlToken) {
+    const payload = decodeIgPassPayload(urlToken);
+    if (payload && Date.now() <= payload.exp && (await verifyIgPassToken(urlToken, secret))) {
+      const clean = req.nextUrl.clone();
+      clean.searchParams.delete(IG_PASS_QUERY_PARAM);
+      const res = NextResponse.redirect(clean);
+      applyFunnelPassCookies(res, urlToken, payload.src);
+      return res;
+    }
+  }
 
   return NextResponse.redirect(new URL("/", req.url));
 }

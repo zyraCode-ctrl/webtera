@@ -1,18 +1,16 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { applyFunnelPassCookies, IG_PASS_QUERY_PARAM } from "@/lib/funnelAuth";
 import { sendServerEvent } from "@/lib/serverAnalytics";
 import { getRequiredEnv } from "@/lib/env";
 import { EVENTS } from "@/lib/events";
 import { encodeGoListQuery } from "@/lib/funnelRef";
 
-const COOKIE_NAME = "ig_pass";
 const FUNNEL_TTL_SECONDS = 6 * 60;
 
 const BASE64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 function bytesToBase64Url(bytes: Uint8Array) {
-  // Pure JS base64url encoding so this works in all Vercel runtimes
-  // (Edge may not provide `btoa` and `Buffer`).
   let out = "";
   for (let i = 0; i < bytes.length; i += 3) {
     const b0 = bytes[i];
@@ -38,12 +36,26 @@ async function hmacSha256(secret: string, data: string) {
     false,
     ["sign"]
   );
-  const sig = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    new TextEncoder().encode(data)
-  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(data));
   return new Uint8Array(sig);
+}
+
+function funnelEntryLandingHtml(nextPath: string) {
+  const safeAttr = nextPath.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="0;url=${safeAttr}" />
+  <title>Loading…</title>
+  <style>body{font-family:system-ui,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;background:#fafafa;color:#333}</style>
+</head>
+<body>
+  <p>Loading your posts…</p>
+  <script>location.replace(${JSON.stringify(nextPath)})</script>
+</body>
+</html>`;
 }
 
 export async function issueFunnelAccess(
@@ -58,33 +70,24 @@ export async function issueFunnelAccess(
   if (!secret) return NextResponse.redirect(new URL("/", req.url));
 
   const exp = Date.now() + FUNNEL_TTL_SECONDS * 1000;
-  const payloadB64 = bytesToBase64Url(
-    new TextEncoder().encode(JSON.stringify({ src, exp }))
-  );
+  const payloadB64 = bytesToBase64Url(new TextEncoder().encode(JSON.stringify({ src, exp })));
   const sig = await hmacSha256(secret, payloadB64);
   const token = `${payloadB64}.${bytesToBase64Url(sig)}`;
 
   const goQ = encodeGoListQuery({ entry: true });
-  const goPath = goQ ? `/go?q=${encodeURIComponent(goQ)}` : "/go";
-  const res = NextResponse.redirect(new URL(goPath, req.url));
-  res.cookies.set({
-    name: COOKIE_NAME,
-    value: token,
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: FUNNEL_TTL_SECONDS,
+  const goUrl = new URL(goQ ? `/go?q=${encodeURIComponent(goQ)}` : "/go", req.url);
+  goUrl.searchParams.set(IG_PASS_QUERY_PARAM, token);
+  const nextPath = `${goUrl.pathname}${goUrl.search}`;
+
+  // HTML landing (not 302): in-app browsers (Meta/Facebook) often drop Set-Cookie on redirect chains.
+  const res = new NextResponse(funnelEntryLandingHtml(nextPath), {
+    status: 200,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
   });
-  res.cookies.set({
-    name: "ig_src",
-    value: src,
-    httpOnly: false,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: FUNNEL_TTL_SECONDS,
-  });
+  applyFunnelPassCookies(res, token, src);
 
   const analyticsResult = await sendServerEvent({
     event: EVENTS.igEntry,

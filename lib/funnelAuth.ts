@@ -1,6 +1,12 @@
+import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export const IG_PASS_COOKIE = "ig_pass";
+/** Short-lived pass in URL — Meta/Facebook in-app browsers often drop cookies on redirect. */
+export const IG_PASS_QUERY_PARAM = "igp";
+export const FUNNEL_TTL_SECONDS = 6 * 60;
+
+export type IgPassPayload = { exp: number; src: "a" | "b" };
 
 const BASE64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 const BASE64_LOOKUP = (() => {
@@ -53,28 +59,27 @@ async function hmacSha256(secret: string, data: string) {
   return new Uint8Array(sig);
 }
 
+export function decodeIgPassPayload(token: string): IgPassPayload | null {
+  const parts = token.split(".");
+  if (parts.length !== 2) return null;
+  try {
+    const payload = JSON.parse(new TextDecoder().decode(base64UrlToBytes(parts[0]))) as IgPassPayload;
+    if (!payload?.exp || typeof payload.exp !== "number") return null;
+    if (payload.src !== "a" && payload.src !== "b") return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
 export async function verifyIgPassToken(token: string, secret: string) {
   const parts = token.split(".");
   if (parts.length !== 2) return false;
   const [payloadB64, sigB64] = parts;
 
-  let payloadText = "";
-  try {
-    payloadText = new TextDecoder().decode(base64UrlToBytes(payloadB64));
-  } catch {
-    return false;
-  }
-
-  let payload: { exp?: number; src?: string } | null = null;
-  try {
-    payload = JSON.parse(payloadText);
-  } catch {
-    return false;
-  }
-
-  if (!payload?.exp || typeof payload.exp !== "number") return false;
+  const payload = decodeIgPassPayload(token);
+  if (!payload) return false;
   if (Date.now() > payload.exp) return false;
-  if (payload.src !== "a" && payload.src !== "b") return false;
 
   const expected = await hmacSha256(secret, payloadB64);
   const got = base64UrlToBytes(sigB64);
@@ -95,9 +100,38 @@ function readIgPassToken(req: NextRequest | Request) {
     if (fromJar) return fromJar;
   }
   const cookieHeader = req.headers.get("cookie");
-  if (!cookieHeader) return "";
-  const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${IG_PASS_COOKIE}=([^;]*)`));
-  return match?.[1] ? decodeURIComponent(match[1]) : "";
+  if (cookieHeader) {
+    const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${IG_PASS_COOKIE}=([^;]*)`));
+    if (match?.[1]) return decodeURIComponent(match[1]);
+  }
+  if ("nextUrl" in req && req.nextUrl instanceof URL) {
+    const fromQuery = req.nextUrl.searchParams.get(IG_PASS_QUERY_PARAM);
+    if (fromQuery) return fromQuery;
+  }
+  return "";
+}
+
+/** Attach funnel cookies to a response (entry link or middleware bootstrap). */
+export function applyFunnelPassCookies(res: NextResponse, token: string, src: "a" | "b") {
+  const secure = process.env.NODE_ENV === "production";
+  res.cookies.set({
+    name: IG_PASS_COOKIE,
+    value: token,
+    httpOnly: true,
+    sameSite: "lax",
+    secure,
+    path: "/",
+    maxAge: FUNNEL_TTL_SECONDS,
+  });
+  res.cookies.set({
+    name: "ig_src",
+    value: src,
+    httpOnly: false,
+    sameSite: "lax",
+    secure,
+    path: "/",
+    maxAge: FUNNEL_TTL_SECONDS,
+  });
 }
 
 /** True when request has a valid short-lived Instagram funnel cookie. */
