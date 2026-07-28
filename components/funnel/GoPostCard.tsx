@@ -10,7 +10,10 @@ import { hasMediaKind } from "@/lib/mediaApi";
 import { encodePostRef, funnelHelpPath, funnelPostPath } from "@/lib/funnelRef";
 import { ProtectedMediaImage } from "@/components/media/ProtectedMediaImage";
 import { funnelAdUrl } from "@/lib/funnelConfig";
-import { consumeCardPopunder } from "@/lib/funnelPopunderSession";
+import {
+  consumeCardPopunder,
+  withPopunderHandoff,
+} from "@/lib/funnelPopunderSession";
 import {
   navigateDestinationOnly,
   openGateThenNavigate,
@@ -91,7 +94,7 @@ export function GoPostCard({
 
     const withPopunder = consumeCardPopunder();
     const { cancel, stayedOnPage } = withPopunder
-      ? openGateThenNavigate(href)
+      ? openGateThenNavigate(withPopunderHandoff(href, "card"))
       : navigateDestinationOnly(href);
 
     cancelNavigateRef.current = cancel;

@@ -1,12 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AdSlot } from "@/components/AdSlot";
 import type { Post } from "@/data/posts";
 import { GO_FULL_LIST_STORAGE_KEY, resetGoFullListUnlock } from "@/lib/funnelGoSession";
 import { applyGoListState, decodePostRef, readGoListState } from "@/lib/funnelRef";
-import { consumeSearchPopunder } from "@/lib/funnelPopunderSession";
+import {
+  applyPopunderHandoffFromLocation,
+  consumeSearchPopunder,
+  withPopunderHandoff,
+} from "@/lib/funnelPopunderSession";
 import { fireReversePopunder } from "@/lib/funnelNavigate";
 import { GoPostCard } from "./GoPostCard";
 
@@ -46,6 +58,11 @@ export function GoPostList({ posts }: { posts: Post[] }) {
     for (let i = 0; i < posts.length; i++) m.set(posts[i].id, i);
     return m;
   }, [posts]);
+
+  // Sync popunder journey flags from content-tab handoff before search can focus.
+  useLayoutEffect(() => {
+    applyPopunderHandoffFromLocation();
+  }, []);
 
   // Restore search box when URL changes (browser Back / Forward).
   useEffect(() => {
@@ -202,7 +219,7 @@ export function GoPostList({ posts }: { posts: Post[] }) {
 
   function handleSearchFocus() {
     if (!consumeSearchPopunder()) return;
-    fireReversePopunder();
+    fireReversePopunder(withPopunderHandoff(window.location.href, "search"));
   }
 
   return (

@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { MouseEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { AdSlot } from "@/components/AdSlot";
@@ -14,7 +21,11 @@ import { decodeFunnelFrom } from "@/lib/funnelRef";
 import { funnelAdUrl } from "@/lib/funnelConfig";
 import { unlockGoFullListForSession } from "@/lib/funnelGoSession";
 import { openGateThenNavigate, fireReversePopunder } from "@/lib/funnelNavigate";
-import { consumeVideoPlayPopunder } from "@/lib/funnelPopunderSession";
+import {
+  applyPopunderHandoffFromLocation,
+  consumeVideoPlayPopunder,
+  withPopunderHandoff,
+} from "@/lib/funnelPopunderSession";
 import type { HelpVideoPresentation } from "@/lib/mediaApi";
 import { EVENTS } from "@/lib/events";
 
@@ -124,9 +135,9 @@ function HelpVideoMediaSection({
   function handleVideoPlayAttempt() {
     if (playGateCompletedRef.current) return;
 
-    // Every play attempt: reverse popunder (new tab keeps help page, current → ad).
+    // First play this journey: reverse popunder (new tab keeps help page, current → ad).
     if (consumeVideoPlayPopunder()) {
-      fireReversePopunder();
+      fireReversePopunder(withPopunderHandoff(window.location.href, "video"));
       return;
     }
 
@@ -231,8 +242,8 @@ function HelpVideoMediaSection({
               source: from ?? undefined,
             });
             unlockGoFullListForSession();
-            // Reverse popunder: new tab → /go list, current tab → smartlink
-            openGateThenNavigate("/go");
+            // Reverse popunder: new tab → fresh /go journey, current tab → smartlink
+            openGateThenNavigate(withPopunderHandoff("/go", "reset"));
           }}
           className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-violet-600 px-4 py-3 text-sm font-medium text-white shadow-sm hover:bg-violet-500 active:scale-[0.98]"
         >
@@ -300,6 +311,11 @@ export function HelpPage({ postId, helpVideo, helpExternalLink }: Props) {
   const postLinkCtaRef = useRef<HTMLDivElement>(null);
   const ctaBoxRef = useRef<HTMLDivElement>(null);
   const videoInsertAfterIdx = videoFunnel ? stableVideoInsertIdx(postId) : VIDEO_INSERT_MIN_IDX;
+
+  // Sync popunder journey flags from content-tab handoff before play can fire again.
+  useLayoutEffect(() => {
+    applyPopunderHandoffFromLocation();
+  }, []);
 
   // Reveal box after user has scrolled through content (download funnel legacy layout only).
   useEffect(() => {
