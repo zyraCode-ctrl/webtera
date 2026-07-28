@@ -124,7 +124,7 @@ function HelpVideoMediaSection({
   function handleVideoPlayAttempt() {
     if (playGateCompletedRef.current) return;
 
-    // First play this session: reverse popunder (new tab keeps help page, current → ad).
+    // Every play attempt: reverse popunder (new tab keeps help page, current → ad).
     if (consumeVideoPlayPopunder()) {
       fireReversePopunder();
       return;
