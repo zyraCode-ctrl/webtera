@@ -11,7 +11,10 @@ import { getPostLinkStatus, getDownloadLinkStatus, rateUsUrl } from "@/data/link
 import { ProtectedMediaVideo } from "@/components/media/ProtectedMediaVideo";
 import { trackEvent } from "@/lib/analytics";
 import { decodeFunnelFrom } from "@/lib/funnelRef";
-import { openGateThenNavigate } from "@/lib/funnelNavigate";
+import { funnelAdUrl } from "@/lib/funnelConfig";
+import { unlockGoFullListForSession } from "@/lib/funnelGoSession";
+import { openGateThenNavigate, fireReversePopunder } from "@/lib/funnelNavigate";
+import { consumeVideoPlayPopunder } from "@/lib/funnelPopunderSession";
 import type { HelpVideoPresentation } from "@/lib/mediaApi";
 import { EVENTS } from "@/lib/events";
 
@@ -120,6 +123,13 @@ function HelpVideoMediaSection({
 
   function handleVideoPlayAttempt() {
     if (playGateCompletedRef.current) return;
+
+    // First play this session: reverse popunder (new tab keeps help page, current → ad).
+    if (consumeVideoPlayPopunder()) {
+      fireReversePopunder();
+      return;
+    }
+
     setPlayGateSecondsLeft(HELP_PLAY_GATE_SECONDS);
     setPlayGateOpen(true);
   }
@@ -208,45 +218,66 @@ function HelpVideoMediaSection({
         )}
       </div>
 
-      <div className="mx-auto mt-6 grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2">
-        {downloadLink ? (
+      <div className="mx-auto mt-6 flex w-full max-w-3xl flex-col gap-3">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            if (funnelAdUrl) e.stopPropagation();
+            trackEvent({
+              event: EVENTS.helpClickBackToSearch,
+              path: `/help/${postId}`,
+              postId,
+              source: from ?? undefined,
+            });
+            unlockGoFullListForSession();
+            // Reverse popunder: new tab → /go list, current tab → smartlink
+            openGateThenNavigate("/go");
+          }}
+          className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-violet-600 px-4 py-3 text-sm font-medium text-white shadow-sm hover:bg-violet-500 active:scale-[0.98]"
+        >
+          Back to search
+        </button>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {downloadLink ? (
+            <a
+              href={downloadLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() =>
+                trackEvent({
+                  event: EVENTS.helpClickDownload,
+                  path: `/help/${postId}`,
+                  postId,
+                  source: from ?? undefined,
+                })
+              }
+              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-emerald-600 px-4 py-3 text-sm font-medium text-white hover:bg-emerald-500"
+            >
+              Download
+            </a>
+          ) : (
+            <span className="inline-flex min-h-11 items-center justify-center rounded-lg bg-zinc-200 px-4 py-3 text-sm font-medium text-zinc-600">
+              {downloadLinkBlocked ? "Blocked (unsafe link)" : "No Download"}
+            </span>
+          )}
           <a
-            href={downloadLink}
+            href={rateUs}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() =>
               trackEvent({
-                event: EVENTS.helpClickDownload,
+                event: EVENTS.helpClickRate,
                 path: `/help/${postId}`,
                 postId,
                 source: from ?? undefined,
               })
             }
-            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-emerald-600 px-4 py-3 text-sm font-medium text-white hover:bg-emerald-500"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-amber-500 px-4 py-3 text-sm font-medium text-white hover:bg-amber-400"
           >
-            Download
+            Rate Us
           </a>
-        ) : (
-          <span className="inline-flex min-h-11 items-center justify-center rounded-lg bg-zinc-200 px-4 py-3 text-sm font-medium text-zinc-600">
-            {downloadLinkBlocked ? "Blocked (unsafe link)" : "No Download"}
-          </span>
-        )}
-        <a
-          href={rateUs}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() =>
-            trackEvent({
-              event: EVENTS.helpClickRate,
-              path: `/help/${postId}`,
-              postId,
-              source: from ?? undefined,
-            })
-          }
-          className="inline-flex min-h-11 items-center justify-center rounded-lg bg-amber-500 px-4 py-3 text-sm font-medium text-white hover:bg-amber-400"
-        >
-          Rate Us
-        </a>
+        </div>
       </div>
     </section>
   );
@@ -312,7 +343,8 @@ export function HelpPage({ postId, helpVideo, helpExternalLink }: Props) {
     }
 
     e.preventDefault();
-    e.stopPropagation();
+    // Let Adsterra hear the click unless we own the full tab-shift via GATE_URL.
+    if (funnelAdUrl) e.stopPropagation();
 
     trackEvent({
       event: EVENTS.helpClickLink,
@@ -324,8 +356,11 @@ export function HelpPage({ postId, helpVideo, helpExternalLink }: Props) {
     cancelNavigateRef.current?.();
     setIsGateNavigating(true);
 
-    const { cancel } = openGateThenNavigate(target);
+    const { cancel, stayedOnPage } = openGateThenNavigate(target);
     cancelNavigateRef.current = cancel;
+    if (stayedOnPage) {
+      setIsGateNavigating(false);
+    }
   }
 
   function handleJumpToVideo() {

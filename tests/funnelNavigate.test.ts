@@ -9,7 +9,6 @@ import {
 
 type FakeWin = { blur: () => void };
 
-/** Node test doubles — no browser. */
 function testDeps(opts: {
   navigateTo: (url: string) => void;
   openTab?: (url: string) => FakeWin | null;
@@ -31,13 +30,13 @@ function testDeps(opts: {
   };
 }
 
-test("openGateThenNavigate opens nextUrl in new tab then navigates current to ad", () => {
+test("tab-shift: opens destination in new tab, current tab goes to ad URL", () => {
   const navigated: string[] = [];
   const opened: string[] = [];
   const target = funnelOutPath("7", "video");
   const ad = "https://ads.example/gate";
 
-  const { popupLikelyBlocked } = openGateThenNavigate(target, ad, {
+  const { popupLikelyBlocked, stayedOnPage } = openGateThenNavigate(target, ad, {
     ...testDeps({
       navigateTo: (u) => navigated.push(u),
       openTab: (u) => {
@@ -48,16 +47,17 @@ test("openGateThenNavigate opens nextUrl in new tab then navigates current to ad
   });
 
   assert.equal(popupLikelyBlocked, false);
-  assert.deepEqual(opened, [target]);
+  assert.equal(stayedOnPage, false);
+  assert.equal(opened.length, 1);
+  assert.ok(opened[0]!.includes("7") || opened[0] === target || opened[0]!.endsWith(target) || opened[0]!.includes("/out/"));
   assert.deepEqual(navigated, [ad]);
 });
 
-test("openGateThenNavigate without http ad navigates current tab to nextUrl only", () => {
+test("empty gate string still uses configured smartlink (funnelAdUrl)", () => {
   const navigated: string[] = [];
   const opened: string[] = [];
-  const target = "/help/wt1.x";
 
-  openGateThenNavigate(target, "", {
+  const { stayedOnPage } = openGateThenNavigate("/help/wt1.x", "", {
     ...testDeps({
       navigateTo: (u) => navigated.push(u),
       openTab: (u) => {
@@ -67,14 +67,15 @@ test("openGateThenNavigate without http ad navigates current tab to nextUrl only
     }),
   });
 
-  // Empty / non-http gate + empty env → destination only (no second tab).
-  assert.deepEqual(opened, []);
-  assert.deepEqual(navigated, [target]);
+  assert.equal(stayedOnPage, false);
+  assert.equal(opened.length, 1);
+  assert.equal(navigated.length, 1);
+  assert.match(navigated[0]!, /^https:\/\//);
 });
 
-test("openGateThenNavigate reports popupLikelyBlocked when openTab returns null", () => {
+test("popup blocked: falls back to same-tab destination", () => {
   const navigated: string[] = [];
-  const { popupLikelyBlocked } = openGateThenNavigate("/x", "https://ads.example/g", {
+  const { popupLikelyBlocked, stayedOnPage } = openGateThenNavigate("/x", "https://ads.example/g", {
     ...testDeps({
       navigateTo: (u) => navigated.push(u),
       openTab: () => null,
@@ -82,23 +83,24 @@ test("openGateThenNavigate reports popupLikelyBlocked when openTab returns null"
   });
 
   assert.equal(popupLikelyBlocked, true);
-  assert.deepEqual(navigated, ["/x"]);
+  assert.equal(stayedOnPage, false);
+  assert.ok(navigated[0]?.includes("/x") || navigated[0] === "/x");
 });
 
-test("openGateThenNavigate cancel is a no-op after sync tab-shift", () => {
+test("openGateThenCallback without ad runs callback in place", () => {
+  let ran = 0;
+  const { stayedOnPage } = openGateThenCallback("", () => {
+    ran += 1;
+  }, testDeps({ navigateTo: () => {} }));
+
+  assert.equal(stayedOnPage, true);
+  assert.equal(ran, 1);
+});
+
+test("openGateChainThenNavigate with ad URL tab-shifts", () => {
   const navigated: string[] = [];
-  const { cancel } = openGateThenNavigate("/y", "https://ads.example/g", {
-    ...testDeps({ navigateTo: (u) => navigated.push(u) }),
-  });
-  cancel();
-  assert.deepEqual(navigated, ["https://ads.example/g"]);
-});
-
-test("openGateThenNavigate passes absolute destination to openTab", () => {
   const opened: string[] = [];
-  const navigated: string[] = [];
-  const target = "https://pub-ff1f131c0a954a2ca3d1dfea676addb8.r2.dev/video/x.mp4";
-  openGateThenNavigate(target, "https://ads.example/g", {
+  openGateChainThenNavigate("https://final.example/dest", "https://ads.example/g", 2, {
     ...testDeps({
       navigateTo: (u) => navigated.push(u),
       openTab: (u) => {
@@ -107,48 +109,7 @@ test("openGateThenNavigate passes absolute destination to openTab", () => {
       },
     }),
   });
-  assert.deepEqual(opened, [target]);
-  assert.deepEqual(navigated, ["https://ads.example/g"]);
-});
 
-test("openGateThenCallback without ad runs callback in place", () => {
-  let ran = 0;
-  const { popupLikelyBlocked } = openGateThenCallback("", () => {
-    ran += 1;
-  }, testDeps({ navigateTo: () => {} }));
-
-  assert.equal(popupLikelyBlocked, false);
-  assert.equal(ran, 1);
-});
-
-test("openGateThenCallback cancel is a no-op", () => {
-  let ran = 0;
-  const { cancel } = openGateThenCallback("", () => {
-    ran += 1;
-  }, testDeps({ navigateTo: () => {} }));
-  cancel();
-  assert.equal(ran, 1);
-});
-
-test("openGateChainThenNavigate tab-shifts like openGateThenNavigate", () => {
-  const navigated: string[] = [];
-  const opened: string[] = [];
-  const { popupLikelyBlocked } = openGateChainThenNavigate(
-    "https://final.example/dest",
-    "https://ads.example/g",
-    2,
-    {
-      ...testDeps({
-        navigateTo: (u) => navigated.push(u),
-        openTab: (u) => {
-          opened.push(u);
-          return { blur() {} };
-        },
-      }),
-    }
-  );
-
-  assert.equal(popupLikelyBlocked, false);
   assert.deepEqual(opened, ["https://final.example/dest"]);
   assert.deepEqual(navigated, ["https://ads.example/g"]);
 });

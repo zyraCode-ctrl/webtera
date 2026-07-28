@@ -1,23 +1,31 @@
 import { funnelAdUrl } from "@/lib/funnelConfig";
 
-/**
- * Kept for overlay timing / API compatibility. Tab-shift itself is synchronous
- * (must run inside the user gesture so `window.open` is not blocked).
- */
+/** Overlay flash only — tab-shift runs synchronously inside the click gesture. */
 export const FUNNEL_GATE_TO_NEXT_MS = 0;
 
 export type OpenGateThenNavigateResult = {
   /** True when `window.open` was blocked and we fell back to in-tab navigation. */
   popupLikelyBlocked: boolean;
+  /** True when this tab did not navigate away (script-mode / content tab only). */
+  stayedOnPage: boolean;
   cancel: () => void;
 };
 
 export type OpenGateThenNavigateDeps = {
   navigateTo: (url: string) => void;
-  /** Open `url` in a new tab; return the Window or null if blocked. */
   openTab: (url: string) => Window | null;
   afterDelay: (fn: () => void, ms: number) => () => void;
 };
+
+function toAbsoluteUrl(url: string): string {
+  if (/^https?:\/\//i.test(url)) return url;
+  if (typeof window === "undefined") return url;
+  try {
+    return new URL(url, window.location.href).href;
+  } catch {
+    return url;
+  }
+}
 
 function browserDeps(): OpenGateThenNavigateDeps {
   return {
@@ -25,7 +33,6 @@ function browserDeps(): OpenGateThenNavigateDeps {
       window.location.assign(url);
     },
     openTab(url) {
-      // Do not pass `noopener` — we need the Window handle to blur/focus for tab-shift.
       return window.open(url, "_blank");
     },
     afterDelay(fn, ms) {
@@ -65,13 +72,25 @@ function resolveAdUrl(explicit?: string): string {
   return funnelAdUrl;
 }
 
+function keepAdFocused(contentTab: Window) {
+  try {
+    contentTab.blur();
+  } catch {
+    /* ignore */
+  }
+  try {
+    window.focus();
+  } catch {
+    /* ignore */
+  }
+}
+
 /**
- * Reverse popunder (tab-shift) on a user gesture:
- * 1. Open the intended destination (`nextUrl`) in a new tab.
- * 2. Redirect the *current* (focused) tab to the ad URL.
- * 3. No third-party script listeners — one open + one assign only.
- *
- * If ad URL is missing or the new tab is blocked, navigates this tab to `nextUrl` only.
+ * Reverse popunder (tab-shift):
+ * 1. Open destination (`nextUrl`) in a NEW tab.
+ * 2. If an ad URL is configured, redirect THIS tab to the ad (stays focused).
+ * 3. If no ad URL, keep THIS tab on the page so the Adsterra popunder script
+ *    (loaded site-wide) can monetize the same click — we do not navigate away.
  */
 export function openGateThenNavigate(
   nextUrl: string,
@@ -80,37 +99,30 @@ export function openGateThenNavigate(
 ): OpenGateThenNavigateResult {
   const d = resolveDeps(overrides);
   const adUrl = resolveAdUrl(gateUrl);
+  const dest = toAbsoluteUrl(nextUrl);
 
-  if (!adUrl) {
-    d.navigateTo(nextUrl);
-    return { popupLikelyBlocked: false, cancel: () => {} };
-  }
+  const contentTab = d.openTab(dest);
 
-  const contentTab = d.openTab(nextUrl);
   if (!contentTab) {
-    d.navigateTo(nextUrl);
-    return { popupLikelyBlocked: true, cancel: () => {} };
+    // Popup blocked — fall back to same-tab navigation to the destination.
+    d.navigateTo(dest);
+    return { popupLikelyBlocked: true, stayedOnPage: false, cancel: () => {} };
   }
 
-  try {
-    contentTab.blur();
-  } catch {
-    /* ignore cross-origin / closed */
-  }
-  try {
-    window.focus();
-  } catch {
-    /* ignore */
+  keepAdFocused(contentTab);
+
+  if (adUrl) {
+    d.navigateTo(adUrl);
+    return { popupLikelyBlocked: false, stayedOnPage: false, cancel: () => {} };
   }
 
-  d.navigateTo(adUrl);
-  return { popupLikelyBlocked: false, cancel: () => {} };
+  // No GATE_URL: content is in the new tab; this tab stays for the popunder script.
+  return { popupLikelyBlocked: false, stayedOnPage: true, cancel: () => {} };
 }
 
 /**
- * Tab-shift then run `callback` on the *new* tab is not possible from here.
- * When an ad URL is configured: open the current page in a new tab, send this tab to the ad.
- * Otherwise: run `callback` in-place (legacy path).
+ * When ad URL is set: open current page in a new tab, send this tab to the ad.
+ * Otherwise run `callback` in place (popunder script can still attach to the click).
  */
 export function openGateThenCallback(
   gateUrl: string,
@@ -119,36 +131,65 @@ export function openGateThenCallback(
 ): OpenGateThenNavigateResult {
   const d = resolveDeps(overrides);
   const adUrl = resolveAdUrl(gateUrl);
-  const currentUrl =
-    typeof window !== "undefined" ? window.location.href : "";
+  const currentUrl = typeof window !== "undefined" ? window.location.href : "";
 
   if (!adUrl || !currentUrl) {
     callback();
-    return { popupLikelyBlocked: false, cancel: () => {} };
+    return { popupLikelyBlocked: false, stayedOnPage: true, cancel: () => {} };
   }
 
   const contentTab = d.openTab(currentUrl);
   if (!contentTab) {
     callback();
-    return { popupLikelyBlocked: true, cancel: () => {} };
+    return { popupLikelyBlocked: true, stayedOnPage: true, cancel: () => {} };
   }
 
-  try {
-    contentTab.blur();
-  } catch {
-    /* ignore */
-  }
-  try {
-    window.focus();
-  } catch {
-    /* ignore */
-  }
-
+  keepAdFocused(contentTab);
   d.navigateTo(adUrl);
-  return { popupLikelyBlocked: false, cancel: () => {} };
+  return { popupLikelyBlocked: false, stayedOnPage: false, cancel: () => {} };
 }
 
-/** Same tab-shift as {@link openGateThenNavigate}. `gatePasses <= 0` skips the ad. */
+/**
+ * Reverse popunder while staying on the same logical page:
+ * new tab keeps `stayUrl` (defaults to current href); current tab → ad.
+ * Use for search focus / in-page video play.
+ */
+export function fireReversePopunder(
+  stayUrl?: string,
+  gateUrl?: string,
+  overrides?: Partial<OpenGateThenNavigateDeps>
+): OpenGateThenNavigateResult {
+  const d = resolveDeps(overrides);
+  const adUrl = resolveAdUrl(gateUrl);
+  const contentUrl = toAbsoluteUrl(
+    stayUrl || (typeof window !== "undefined" ? window.location.href : "")
+  );
+
+  if (!adUrl || !contentUrl) {
+    return { popupLikelyBlocked: false, stayedOnPage: true, cancel: () => {} };
+  }
+
+  const contentTab = d.openTab(contentUrl);
+  if (!contentTab) {
+    return { popupLikelyBlocked: true, stayedOnPage: true, cancel: () => {} };
+  }
+
+  keepAdFocused(contentTab);
+  d.navigateTo(adUrl);
+  return { popupLikelyBlocked: false, stayedOnPage: false, cancel: () => {} };
+}
+
+/** Navigate this tab to `nextUrl` with no ad (quota exhausted / skip). */
+export function navigateDestinationOnly(
+  nextUrl: string,
+  overrides?: Partial<OpenGateThenNavigateDeps>
+): OpenGateThenNavigateResult {
+  const d = resolveDeps(overrides);
+  d.navigateTo(toAbsoluteUrl(nextUrl));
+  return { popupLikelyBlocked: false, stayedOnPage: false, cancel: () => {} };
+}
+
+/** Same as {@link openGateThenNavigate}. `gatePasses <= 0` skips the ad. */
 export function openGateChainThenNavigate(
   nextUrl: string,
   gateUrl?: string,
@@ -156,9 +197,7 @@ export function openGateChainThenNavigate(
   overrides?: Partial<OpenGateThenNavigateDeps>
 ): OpenGateThenNavigateResult {
   if (gatePasses != null && gatePasses <= 0) {
-    const d = resolveDeps(overrides);
-    d.navigateTo(nextUrl);
-    return { popupLikelyBlocked: false, cancel: () => {} };
+    return navigateDestinationOnly(nextUrl, overrides);
   }
   return openGateThenNavigate(nextUrl, gateUrl, overrides);
 }

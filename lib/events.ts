@@ -11,6 +11,7 @@ export const EVENTS = {
   helpClickDownload: "help_click_download",
   helpClickLink: "help_click_link",
   helpClickRate: "help_click_rate",
+  helpClickBackToSearch: "help_click_back_to_search",
   requestToolPageView: "request_tool_page_view",
   requestToolSubmitted: "request_tool_submitted",
 } as const;

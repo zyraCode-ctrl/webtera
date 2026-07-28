@@ -3,14 +3,18 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
-import { useRouter } from "next/navigation";
 import { FunnelNavigatingOverlay } from "@/components/FunnelNavigatingOverlay";
 import { trackEvent } from "@/lib/analytics";
 import { unlockGoFullListForSession } from "@/lib/funnelGoSession";
 import { hasMediaKind } from "@/lib/mediaApi";
 import { encodePostRef, funnelHelpPath, funnelPostPath } from "@/lib/funnelRef";
 import { ProtectedMediaImage } from "@/components/media/ProtectedMediaImage";
-import { openGateChainThenNavigate, openGateThenNavigate } from "@/lib/funnelNavigate";
+import { funnelAdUrl } from "@/lib/funnelConfig";
+import { consumeCardPopunder } from "@/lib/funnelPopunderSession";
+import {
+  navigateDestinationOnly,
+  openGateThenNavigate,
+} from "@/lib/funnelNavigate";
 import { EVENTS } from "@/lib/events";
 
 type OverlayVariant = "full" | "play";
@@ -38,7 +42,6 @@ export function GoPostCard({
   preview: string;
 }) {
   const hasPreviewVideo = hasMediaKind(id, "preview");
-  const router = useRouter();
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [overlayVariant, setOverlayVariant] = useState<OverlayVariant>("full");
   const cancelNavigateRef = useRef<(() => void) | null>(null);
@@ -49,7 +52,6 @@ export function GoPostCard({
     };
   }, []);
 
-  // BF-cache restores `/go` with frozen React state — sponsor overlay can stay "open".
   useEffect(() => {
     function resetNavigateOverlay() {
       cancelNavigateRef.current?.();
@@ -78,63 +80,46 @@ export function GoPostCard({
     ? `${funnelPostPath(id)}#preview`
     : funnelHelpPath(id, "video");
 
-  function beginFullVideoNavigation() {
+  function beginNavigation(href: string, variant: OverlayVariant) {
     if (isRedirecting) return;
 
     unlockGoFullListForSession();
-
     cancelNavigateRef.current?.();
     pinGoListAnchorForBack(id);
-
-    const skipAd = Math.random() < 0.5;
-    if (skipAd) {
-      router.push(fullVideoHref);
-      return;
-    }
-
-    setOverlayVariant("full");
+    setOverlayVariant(variant);
     setIsRedirecting(true);
 
-    const { cancel } = openGateThenNavigate(fullVideoHref);
+    const withPopunder = consumeCardPopunder();
+    const { cancel, stayedOnPage } = withPopunder
+      ? openGateThenNavigate(href)
+      : navigateDestinationOnly(href);
+
     cancelNavigateRef.current = cancel;
-  }
-
-  function beginPlayNavigation() {
-    if (isRedirecting) return;
-
-    unlockGoFullListForSession();
-
-    cancelNavigateRef.current?.();
-    pinGoListAnchorForBack(id);
-    setOverlayVariant("play");
-    setIsRedirecting(true);
-
-    const { cancel } = openGateChainThenNavigate(playTargetHref, undefined, 2);
-    cancelNavigateRef.current = cancel;
+    if (stayedOnPage) setIsRedirecting(false);
   }
 
   function handleFullVideoClick(e: MouseEvent<HTMLAnchorElement>) {
     e.preventDefault();
-    e.stopPropagation();
+    if (funnelAdUrl) e.stopPropagation();
     if (isRedirecting) return;
     trackEvent({
       event: EVENTS.goClickFullVideo,
       path: "/go",
       postId: id,
     });
-    beginFullVideoNavigation();
+    beginNavigation(fullVideoHref, "full");
   }
 
   function handlePlayClick(e: MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
-    e.stopPropagation();
+    if (funnelAdUrl) e.stopPropagation();
     if (isRedirecting) return;
     trackEvent({
       event: EVENTS.goClickPreviewPlay,
       path: "/go",
       postId: id,
     });
-    beginPlayNavigation();
+    beginNavigation(playTargetHref, "play");
   }
 
   const overlayTitle =

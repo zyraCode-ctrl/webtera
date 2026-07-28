@@ -59,6 +59,31 @@ async function hmacSha256(secret: string, data: string) {
   return new Uint8Array(sig);
 }
 
+function bytesToBase64Url(bytes: Uint8Array) {
+  let out = "";
+  for (let i = 0; i < bytes.length; i += 3) {
+    const b0 = bytes[i];
+    const has1 = i + 1 < bytes.length;
+    const has2 = i + 2 < bytes.length;
+    const b1 = has1 ? bytes[i + 1] : 0;
+    const b2 = has2 ? bytes[i + 2] : 0;
+    const triplet = (b0 << 16) | (b1 << 8) | b2;
+    out += BASE64_ALPHABET[(triplet >> 18) & 63];
+    out += BASE64_ALPHABET[(triplet >> 12) & 63];
+    out += has1 ? BASE64_ALPHABET[(triplet >> 6) & 63] : "=";
+    out += has2 ? BASE64_ALPHABET[triplet & 63] : "=";
+  }
+  return out.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+/** Mint a fresh signed pass valid for {@link FUNNEL_TTL_SECONDS}. */
+export async function mintIgPassToken(secret: string, src: "a" | "b") {
+  const exp = Date.now() + FUNNEL_TTL_SECONDS * 1000;
+  const payloadB64 = bytesToBase64Url(new TextEncoder().encode(JSON.stringify({ src, exp })));
+  const sig = await hmacSha256(secret, payloadB64);
+  return `${payloadB64}.${bytesToBase64Url(sig)}`;
+}
+
 export function decodeIgPassPayload(token: string): IgPassPayload | null {
   const parts = token.split(".");
   if (parts.length !== 2) return null;
@@ -109,6 +134,26 @@ function readIgPassToken(req: NextRequest | Request) {
     if (fromQuery) return fromQuery;
   }
   return "";
+}
+
+export function readIgPassTokenFromRequest(req: NextRequest | Request) {
+  return readIgPassToken(req);
+}
+
+/**
+ * Re-issue cookies with a fresh 6-minute TTL on an existing response
+ * (sliding window while the user stays in the funnel).
+ */
+export async function refreshFunnelPassCookies(req: NextRequest, res: NextResponse) {
+  const secret = getIgFunnelSecret();
+  if (!secret) return res;
+  const existing = readIgPassToken(req);
+  const payload = existing ? decodeIgPassPayload(existing) : null;
+  if (!payload || Date.now() > payload.exp) return res;
+  if (!(await verifyIgPassToken(existing, secret))) return res;
+  const fresh = await mintIgPassToken(secret, payload.src);
+  applyFunnelPassCookies(res, fresh, payload.src);
+  return res;
 }
 
 /** Attach funnel cookies to a response (entry link or middleware bootstrap). */

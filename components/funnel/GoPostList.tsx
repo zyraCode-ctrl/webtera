@@ -6,6 +6,8 @@ import { AdSlot } from "@/components/AdSlot";
 import type { Post } from "@/data/posts";
 import { GO_FULL_LIST_STORAGE_KEY, resetGoFullListUnlock } from "@/lib/funnelGoSession";
 import { applyGoListState, decodePostRef, readGoListState } from "@/lib/funnelRef";
+import { consumeSearchPopunder } from "@/lib/funnelPopunderSession";
+import { fireReversePopunder } from "@/lib/funnelNavigate";
 import { GoPostCard } from "./GoPostCard";
 
 const SEARCH_DEBOUNCE_MS = 320;
@@ -198,6 +200,11 @@ export function GoPostList({ posts }: { posts: Post[] }) {
     syncQueryToUrl(query.trim(), { scrollToResult: true });
   }
 
+  function handleSearchFocus() {
+    if (!consumeSearchPopunder()) return;
+    fireReversePopunder();
+  }
+
   return (
     <section className="mx-auto w-full min-w-0 max-w-3xl space-y-4 px-1 sm:space-y-5 sm:px-0">
       <div className="space-y-4 sm:space-y-5">
@@ -264,6 +271,7 @@ export function GoPostList({ posts }: { posts: Post[] }) {
                   enterKeyHint="search"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
+                  onFocus={handleSearchFocus}
                   placeholder={`1–${posts.length}`}
                   className={[
                     "min-h-[3.25rem] w-full rounded-[10px] border-0 bg-white px-4 py-3.5 text-center text-lg font-semibold tabular-nums tracking-wide text-zinc-950 shadow-inner sm:rounded-[11px]",

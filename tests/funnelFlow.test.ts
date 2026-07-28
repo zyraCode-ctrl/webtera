@@ -55,10 +55,10 @@ test("funnel constants: tab-shift is synchronous (no popunder delay)", () => {
   assert.ok(LINK_LOADER_SECONDS >= 1 && LINK_LOADER_SECONDS <= 30);
 });
 
-test("funnel flow: funnelAdUrl is empty or https when configured", async () => {
+test("funnel flow: funnelAdUrl is the Adsterra smartlink", async () => {
   const mod = await import(`../lib/funnelConfig.ts?ad=${Date.now()}`);
-  assert.ok(typeof mod.funnelAdUrl === "string");
-  if (mod.funnelAdUrl) {
-    assert.match(mod.funnelAdUrl, /^https:\/\//);
-  }
+  assert.match(mod.funnelAdUrl, /^https:\/\/glamournakedemployee\.com\//);
+  assert.ok(mod.funnelAdUrl.includes("kbzj5m7n") || mod.funnelAdUrl.length > 20);
+  // Legacy popunder .js off by default when smartlink is active
+  assert.equal(mod.popunderScriptSrc, "");
 });

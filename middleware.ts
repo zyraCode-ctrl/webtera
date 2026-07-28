@@ -6,6 +6,8 @@ import {
   getIgFunnelSecret,
   hasValidIgPass,
   IG_PASS_QUERY_PARAM,
+  mintIgPassToken,
+  refreshFunnelPassCookies,
   verifyIgPassToken,
 } from "@/lib/funnelAuth";
 
@@ -16,10 +18,13 @@ export async function middleware(req: NextRequest) {
   }
 
   if (await hasValidIgPass(req)) {
-    return NextResponse.next();
+    // Sliding 6-minute window on every funnel page hit (/go, /post, /help, /out).
+    const res = NextResponse.next();
+    await refreshFunnelPassCookies(req, res);
+    return res;
   }
 
-  // Meta / Facebook in-app browser: cookie from entry redirect is often missing — bootstrap from URL token.
+  // Meta / Facebook in-app browser: cookie from entry is often missing — bootstrap from URL token.
   const urlToken = req.nextUrl.searchParams.get(IG_PASS_QUERY_PARAM);
   if (urlToken) {
     const payload = decodeIgPassPayload(urlToken);
@@ -27,7 +32,8 @@ export async function middleware(req: NextRequest) {
       const clean = req.nextUrl.clone();
       clean.searchParams.delete(IG_PASS_QUERY_PARAM);
       const res = NextResponse.redirect(clean);
-      applyFunnelPassCookies(res, urlToken, payload.src);
+      const fresh = await mintIgPassToken(secret, payload.src);
+      applyFunnelPassCookies(res, fresh, payload.src);
       return res;
     }
   }

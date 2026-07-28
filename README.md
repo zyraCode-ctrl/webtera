@@ -54,7 +54,8 @@ Set an environment variable:
 - `ANALYTICS_WEBHOOK_URL`: optional webhook endpoint for funnel analytics events
 - `REQUEST_TOOL_WEBHOOK_URL`: optional webhook endpoint for `/request-tool` submissions
 - `NEXT_PUBLIC_FUNNEL_DEFAULT_EXTERNAL_URL`: optional default external URL fallback for funnel actions
-- `NEXT_PUBLIC_FUNNEL_GATE_URL` (or `NEXT_PUBLIC_FUNNEL_AD_URL`): HTTPS ad landing URL for reverse popunder / tab-shift on Full Video / Link clicks. Current tab → ad; destination opens in a new tab. Leave empty to skip the ad step.
+- `NEXT_PUBLIC_FUNNEL_GATE_URL` (or `NEXT_PUBLIC_FUNNEL_AD_URL`): Adsterra smartlink for reverse popunder / tab-shift. Current tab → smartlink; destination opens in a new tab. Default is baked into `lib/funnelConfig.ts` if unset.
+- `NEXT_PUBLIC_POPUNDER_SCRIPT_SRC`: optional legacy popunder `.js` (disabled by default; smartlink replaces it).
 - `NEXT_PUBLIC_FUNNEL_RATE_URL`: optional Google Play / App Store review page for "Rate Us"
 - `NEXT_PUBLIC_ALLOWED_OUTBOUND_HOSTS`: optional comma-separated host allowlist for `getPostLink`/`getDownloadLink` (example: `mega.nz,xvideos.com,pub-ff1f131c0a954a2ca3d1dfea676addb8.r2.dev`)
 - `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`: optional shared rate-limit backend for API routes (falls back to in-memory when unset)

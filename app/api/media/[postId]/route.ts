@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getMediaSource, type MediaKind } from "@/data/mediaRegistry";
-import { hasValidIgPass } from "@/lib/funnelAuth";
+import { hasValidIgPass, refreshFunnelPassCookies } from "@/lib/funnelAuth";
 import { fetchMediaBytes } from "@/lib/r2Storage";
 
 export const runtime = "nodejs";
@@ -63,5 +63,7 @@ export async function GET(
     headers.set("Content-Range", payload.contentRange);
   }
 
-  return new NextResponse(payload.body, { status: payload.status, headers });
+  const res = new NextResponse(payload.body, { status: payload.status, headers });
+  await refreshFunnelPassCookies(req, res);
+  return res;
 }
