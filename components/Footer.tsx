@@ -9,7 +9,7 @@ export function Footer() {
             WebTera Tools
           </div>
           <div className="text-xs text-zinc-500">
-            Fast, clean utility tools for everyday tasks.
+            Fast, clean utility tools for everyday taskss.
           </div>
         </div>
         <nav className="flex flex-wrap items-center gap-3 text-xs sm:text-sm">
