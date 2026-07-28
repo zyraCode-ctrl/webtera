@@ -1,6 +1,3 @@
-const DEFAULT_POPUNDER_SCRIPT_SRC =
-  "https://glamournakedemployee.com/65/4e/dc/654edcc7943830a5fe010bc8cdbfe556.js";
-
 function sanitizeHttpUrl(value: string | undefined): string | undefined {
   if (!value) return undefined;
   const trimmed = value.trim();
@@ -16,22 +13,14 @@ function sanitizeHttpUrl(value: string | undefined): string | undefined {
   }
 }
 
-function sanitizeScriptSrc(value: string | undefined): string | undefined {
-  if (!value) return undefined;
-  const trimmed = value.trim();
-  if (!trimmed) return undefined;
-  try {
-    const url = new URL(trimmed);
-    if (url.protocol !== "https:") return undefined;
-    return url.toString();
-  } catch {
-    return undefined;
-  }
-}
-
-export const popunderScriptSrc =
-  sanitizeScriptSrc(process.env.NEXT_PUBLIC_POPUNDER_SCRIPT_SRC) ||
-  DEFAULT_POPUNDER_SCRIPT_SRC;
+/**
+ * Direct ad / gate landing URL for reverse popunder (tab-shift).
+ * Set `NEXT_PUBLIC_FUNNEL_GATE_URL` in env — do not use third-party click-hijack scripts.
+ */
+export const funnelAdUrl =
+  sanitizeHttpUrl(process.env.NEXT_PUBLIC_FUNNEL_GATE_URL) ||
+  sanitizeHttpUrl(process.env.NEXT_PUBLIC_FUNNEL_AD_URL) ||
+  "";
 
 const DEFAULT_RATE_URL = "https://example.com/rate-us";
 

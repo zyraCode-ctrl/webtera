@@ -305,12 +305,14 @@ export function HelpPage({ postId, helpVideo, helpExternalLink }: Props) {
     if (!target) {
       if (helpVideo?.mode === "gated") {
         e.preventDefault();
+        e.stopPropagation();
         handleJumpToVideo();
       }
       return;
     }
 
     e.preventDefault();
+    e.stopPropagation();
 
     trackEvent({
       event: EVENTS.helpClickLink,

@@ -115,6 +115,7 @@ export function GoPostCard({
 
   function handleFullVideoClick(e: MouseEvent<HTMLAnchorElement>) {
     e.preventDefault();
+    e.stopPropagation();
     if (isRedirecting) return;
     trackEvent({
       event: EVENTS.goClickFullVideo,
@@ -124,7 +125,9 @@ export function GoPostCard({
     beginFullVideoNavigation();
   }
 
-  function handlePlayClick() {
+  function handlePlayClick(e: MouseEvent<HTMLButtonElement>) {
+    e.preventDefault();
+    e.stopPropagation();
     if (isRedirecting) return;
     trackEvent({
       event: EVENTS.goClickPreviewPlay,

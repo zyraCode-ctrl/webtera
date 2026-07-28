@@ -1,15 +1,21 @@
-/** Brief delay so the global popunder script can attach to the user gesture before navigation. */
-export const FUNNEL_GATE_TO_NEXT_MS = 900;
+import { funnelAdUrl } from "@/lib/funnelConfig";
+
+/**
+ * Kept for overlay timing / API compatibility. Tab-shift itself is synchronous
+ * (must run inside the user gesture so `window.open` is not blocked).
+ */
+export const FUNNEL_GATE_TO_NEXT_MS = 0;
 
 export type OpenGateThenNavigateResult = {
-  /** Kept for API compatibility; popunder does not use popup tabs. */
+  /** True when `window.open` was blocked and we fell back to in-tab navigation. */
   popupLikelyBlocked: boolean;
   cancel: () => void;
 };
 
 export type OpenGateThenNavigateDeps = {
   navigateTo: (url: string) => void;
-  /** Runs `fn` after `ms`; returns a function that cancels it. Avoids exposing timer-handle typing differences (DOM vs Node). */
+  /** Open `url` in a new tab; return the Window or null if blocked. */
+  openTab: (url: string) => Window | null;
   afterDelay: (fn: () => void, ms: number) => () => void;
 };
 
@@ -18,7 +24,15 @@ function browserDeps(): OpenGateThenNavigateDeps {
     navigateTo(url) {
       window.location.assign(url);
     },
+    openTab(url) {
+      // Do not pass `noopener` — we need the Window handle to blur/focus for tab-shift.
+      return window.open(url, "_blank");
+    },
     afterDelay(fn, ms) {
+      if (ms <= 0) {
+        fn();
+        return () => {};
+      }
       const id = window.setTimeout(fn, ms);
       return () => window.clearTimeout(id);
     },
@@ -28,7 +42,12 @@ function browserDeps(): OpenGateThenNavigateDeps {
 function serverStubDeps(): OpenGateThenNavigateDeps {
   return {
     navigateTo: () => {},
+    openTab: () => null,
     afterDelay(fn, ms) {
+      if (ms <= 0) {
+        fn();
+        return () => {};
+      }
       const id = setTimeout(fn, ms);
       return () => clearTimeout(id);
     },
@@ -40,47 +59,99 @@ function resolveDeps(overrides?: Partial<OpenGateThenNavigateDeps>): OpenGateThe
   return { ...base, ...overrides };
 }
 
-/**
- * Waits briefly (popunder runs site-wide), then navigates this tab to `nextUrl`.
- * `gateUrl` / `gatePasses` are ignored — kept for stable call sites during the popunder migration.
- */
-export function openGateThenNavigate(
-  nextUrl: string,
-  _gateUrl?: string,
-  overrides?: Partial<OpenGateThenNavigateDeps>
-): OpenGateThenNavigateResult {
-  const d = resolveDeps(overrides);
-  const cancelNavigate = d.afterDelay(() => {
-    d.navigateTo(nextUrl);
-  }, FUNNEL_GATE_TO_NEXT_MS);
-  return {
-    popupLikelyBlocked: false,
-    cancel: cancelNavigate,
-  };
+function resolveAdUrl(explicit?: string): string {
+  const fromArg = explicit?.trim() || "";
+  if (fromArg.startsWith("http://") || fromArg.startsWith("https://")) return fromArg;
+  return funnelAdUrl;
 }
 
 /**
- * Runs `callback` after {@link FUNNEL_GATE_TO_NEXT_MS} (popunder attaches on the same click).
+ * Reverse popunder (tab-shift) on a user gesture:
+ * 1. Open the intended destination (`nextUrl`) in a new tab.
+ * 2. Redirect the *current* (focused) tab to the ad URL.
+ * 3. No third-party script listeners — one open + one assign only.
+ *
+ * If ad URL is missing or the new tab is blocked, navigates this tab to `nextUrl` only.
+ */
+export function openGateThenNavigate(
+  nextUrl: string,
+  gateUrl?: string,
+  overrides?: Partial<OpenGateThenNavigateDeps>
+): OpenGateThenNavigateResult {
+  const d = resolveDeps(overrides);
+  const adUrl = resolveAdUrl(gateUrl);
+
+  if (!adUrl) {
+    d.navigateTo(nextUrl);
+    return { popupLikelyBlocked: false, cancel: () => {} };
+  }
+
+  const contentTab = d.openTab(nextUrl);
+  if (!contentTab) {
+    d.navigateTo(nextUrl);
+    return { popupLikelyBlocked: true, cancel: () => {} };
+  }
+
+  try {
+    contentTab.blur();
+  } catch {
+    /* ignore cross-origin / closed */
+  }
+  try {
+    window.focus();
+  } catch {
+    /* ignore */
+  }
+
+  d.navigateTo(adUrl);
+  return { popupLikelyBlocked: false, cancel: () => {} };
+}
+
+/**
+ * Tab-shift then run `callback` on the *new* tab is not possible from here.
+ * When an ad URL is configured: open the current page in a new tab, send this tab to the ad.
+ * Otherwise: run `callback` in-place (legacy path).
  */
 export function openGateThenCallback(
-  _gateUrl: string,
+  gateUrl: string,
   callback: () => void,
   overrides?: Partial<OpenGateThenNavigateDeps>
 ): OpenGateThenNavigateResult {
   const d = resolveDeps(overrides);
-  const cancelCallback = d.afterDelay(() => {
+  const adUrl = resolveAdUrl(gateUrl);
+  const currentUrl =
+    typeof window !== "undefined" ? window.location.href : "";
+
+  if (!adUrl || !currentUrl) {
     callback();
-  }, FUNNEL_GATE_TO_NEXT_MS);
-  return {
-    popupLikelyBlocked: false,
-    cancel: cancelCallback,
-  };
+    return { popupLikelyBlocked: false, cancel: () => {} };
+  }
+
+  const contentTab = d.openTab(currentUrl);
+  if (!contentTab) {
+    callback();
+    return { popupLikelyBlocked: true, cancel: () => {} };
+  }
+
+  try {
+    contentTab.blur();
+  } catch {
+    /* ignore */
+  }
+  try {
+    window.focus();
+  } catch {
+    /* ignore */
+  }
+
+  d.navigateTo(adUrl);
+  return { popupLikelyBlocked: false, cancel: () => {} };
 }
 
-/** Same as {@link openGateThenNavigate}; chain passes are no longer used with one popunder per page. */
+/** Same tab-shift as {@link openGateThenNavigate}. `gatePasses <= 0` skips the ad. */
 export function openGateChainThenNavigate(
   nextUrl: string,
-  _gateUrl?: string,
+  gateUrl?: string,
   gatePasses?: number,
   overrides?: Partial<OpenGateThenNavigateDeps>
 ): OpenGateThenNavigateResult {
@@ -89,5 +160,5 @@ export function openGateChainThenNavigate(
     d.navigateTo(nextUrl);
     return { popupLikelyBlocked: false, cancel: () => {} };
   }
-  return openGateThenNavigate(nextUrl, _gateUrl, overrides);
+  return openGateThenNavigate(nextUrl, gateUrl, overrides);
 }

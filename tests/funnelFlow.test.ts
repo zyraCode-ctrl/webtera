@@ -50,16 +50,15 @@ test("funnel flow: Full Video links directly to help (no /out loader)", () => {
   assert.match(href, /^\/help\/wt1\./);
 });
 
-test("funnel constants: timing is coherent", () => {
-  assert.ok(FUNNEL_GATE_TO_NEXT_MS >= 400 && FUNNEL_GATE_TO_NEXT_MS <= 3000);
+test("funnel constants: tab-shift is synchronous (no popunder delay)", () => {
+  assert.equal(FUNNEL_GATE_TO_NEXT_MS, 0);
   assert.ok(LINK_LOADER_SECONDS >= 1 && LINK_LOADER_SECONDS <= 30);
 });
 
-test("funnel flow: popunderScriptSrc parses as https URL", async () => {
-  const mod = await import(`../lib/funnelConfig.ts?pop=${Date.now()}`);
-  assert.match(mod.popunderScriptSrc, /^https:\/\//);
-  assert.ok(mod.popunderScriptSrc.endsWith(".js"));
-  assert.doesNotThrow(() => {
-    void new URL(mod.popunderScriptSrc);
-  });
+test("funnel flow: funnelAdUrl is empty or https when configured", async () => {
+  const mod = await import(`../lib/funnelConfig.ts?ad=${Date.now()}`);
+  assert.ok(typeof mod.funnelAdUrl === "string");
+  if (mod.funnelAdUrl) {
+    assert.match(mod.funnelAdUrl, /^https:\/\//);
+  }
 });
