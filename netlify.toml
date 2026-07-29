@@ -3,6 +3,9 @@
 
 [build]
   command = "npm run build"
+  # Must not be repo root when using @netlify/plugin-nextjs.
+  # Plugin will create/handle final output; this just avoids root publish validation failure.
+  publish = ".next"
 
 [build.environment]
   # Netlify compares env VALUES to repo + build output.
