@@ -55,10 +55,19 @@ test("funnel constants: tab-shift is synchronous (no popunder delay)", () => {
   assert.ok(LINK_LOADER_SECONDS >= 1 && LINK_LOADER_SECONDS <= 30);
 });
 
-test("funnel flow: funnelAdUrl is the Adsterra smartlink", async () => {
-  const mod = await import(`../lib/funnelConfig.ts?ad=${Date.now()}`);
-  assert.match(mod.funnelAdUrl, /^https:\/\/glamournakedemployee\.com\//);
-  assert.ok(mod.funnelAdUrl.includes("kbzj5m7n") || mod.funnelAdUrl.length > 20);
-  // Legacy popunder .js off by default when smartlink is active
-  assert.equal(mod.popunderScriptSrc, "");
+test("funnel flow: funnelAdUrl has no hardcoded smartlink fallback", async () => {
+  const prevGate = process.env.NEXT_PUBLIC_FUNNEL_GATE_URL;
+  const prevAd = process.env.NEXT_PUBLIC_FUNNEL_AD_URL;
+  try {
+    delete process.env.NEXT_PUBLIC_FUNNEL_GATE_URL;
+    delete process.env.NEXT_PUBLIC_FUNNEL_AD_URL;
+    const mod = await import(`../lib/funnelConfig.ts?ad=${Date.now()}`);
+    assert.equal(mod.funnelAdUrl, "");
+    assert.equal(mod.popunderScriptSrc, "");
+  } finally {
+    if (prevGate === undefined) delete process.env.NEXT_PUBLIC_FUNNEL_GATE_URL;
+    else process.env.NEXT_PUBLIC_FUNNEL_GATE_URL = prevGate;
+    if (prevAd === undefined) delete process.env.NEXT_PUBLIC_FUNNEL_AD_URL;
+    else process.env.NEXT_PUBLIC_FUNNEL_AD_URL = prevAd;
+  }
 });

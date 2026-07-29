@@ -53,9 +53,26 @@ test("tab-shift: opens destination in new tab, current tab goes to ad URL", () =
   assert.deepEqual(navigated, [ad]);
 });
 
-test("empty gate string still uses configured smartlink (funnelAdUrl)", () => {
+test("empty gate string uses configured smartlink when funnelAdUrl is set", () => {
   const navigated: string[] = [];
   const opened: string[] = [];
+  const adFromEnv = process.env.NEXT_PUBLIC_FUNNEL_GATE_URL || process.env.NEXT_PUBLIC_FUNNEL_AD_URL || "";
+  if (!adFromEnv.startsWith("http")) {
+    // No env smartlink in this run — pass an explicit ad URL instead of relying on a repo default.
+    const { stayedOnPage } = openGateThenNavigate("/help/wt1.x", "https://ads.example/explicit", {
+      ...testDeps({
+        navigateTo: (u) => navigated.push(u),
+        openTab: (u) => {
+          opened.push(u);
+          return { blur() {} };
+        },
+      }),
+    });
+    assert.equal(stayedOnPage, false);
+    assert.equal(opened.length, 1);
+    assert.deepEqual(navigated, ["https://ads.example/explicit"]);
+    return;
+  }
 
   const { stayedOnPage } = openGateThenNavigate("/help/wt1.x", "", {
     ...testDeps({

@@ -1,0 +1,11 @@
+# Next.js on Netlify: use the Next.js Runtime (plugin auto-detected).
+# Leave Publish directory empty in the UI.
+
+[build]
+  command = "npm run build"
+
+[build.environment]
+  # Netlify compares env VALUES to repo + build output.
+  # R2_BUCKET_NAME is often a short word (e.g. "video") → false positives everywhere.
+  # NEXT_PUBLIC_* values are intentionally inlined into client JS by Next.js.
+  SECRETS_SCAN_OMIT_KEYS = "R2_BUCKET_NAME,NEXT_PUBLIC_FUNNEL_GATE_URL,NEXT_PUBLIC_FUNNEL_AD_URL"

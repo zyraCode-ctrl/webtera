@@ -26,18 +26,15 @@ function sanitizeScriptSrc(value: string | undefined): string | undefined {
   }
 }
 
-/** Adsterra smartlink — reverse popunder: current tab → this URL, new tab → content. */
-const DEFAULT_FUNNEL_AD_URL =
-  "https://glamournakedemployee.com/kbzj5m7n?key=3015ea85fcd181f0a2e0182ffff40304";
-
 /**
  * Direct ad landing URL for reverse popunder (tab-shift).
- * Override with `NEXT_PUBLIC_FUNNEL_GATE_URL` or `NEXT_PUBLIC_FUNNEL_AD_URL`.
+ * Set `NEXT_PUBLIC_FUNNEL_GATE_URL` or `NEXT_PUBLIC_FUNNEL_AD_URL` in env (no hardcoded fallback —
+ * keeps secrets scanners / repo free of live smartlink URLs).
  */
 export const funnelAdUrl =
   sanitizeHttpUrl(process.env.NEXT_PUBLIC_FUNNEL_GATE_URL) ||
   sanitizeHttpUrl(process.env.NEXT_PUBLIC_FUNNEL_AD_URL) ||
-  DEFAULT_FUNNEL_AD_URL;
+  "";
 
 /**
  * Legacy Adsterra popunder .js — disabled by default (smartlink tab-shift replaces it).
