@@ -15,6 +15,12 @@ export type OpenGateThenNavigateDeps = {
   navigateTo: (url: string) => void;
   openTab: (url: string) => Window | null;
   afterDelay: (fn: () => void, ms: number) => () => void;
+  /**
+   * When true (Telegram / Instagram / Facebook in-app browsers), open the ad
+   * externally and keep this view on content — reverse popunder would leave the
+   * user stuck on the ad inside a single WebView.
+   */
+  preferContentTab?: boolean;
 };
 
 function toAbsoluteUrl(url: string): string {
@@ -27,13 +33,48 @@ function toAbsoluteUrl(url: string): string {
   }
 }
 
+/** Single-webview / in-app browsers where reverse popunder focus cannot work. */
+export function isInAppBrowser(
+  userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "",
+  win: Window | null = typeof window !== "undefined" ? window : null
+): boolean {
+  if (win) {
+    const extended = win as Window & {
+      TelegramWebviewProxy?: unknown;
+      Telegram?: { WebApp?: unknown };
+    };
+    if (extended.TelegramWebviewProxy || extended.Telegram?.WebApp) return true;
+  }
+  return /Telegram|FBAN|FBAV|Instagram|Line\//i.test(userAgent || "");
+}
+
+/**
+ * Open a background tab without granting it opener privileges longer than needed.
+ * Uses about:blank first so the destination load is less likely to steal focus
+ * than `window.open(dest)` directly.
+ */
+function openBackgroundTab(url: string): Window | null {
+  const tab = window.open("about:blank", "_blank");
+  if (!tab) return null;
+  try {
+    tab.location.replace(url);
+  } catch {
+    try {
+      tab.location.href = url;
+    } catch {
+      /* ignore cross-window assignment failures */
+    }
+  }
+  return tab;
+}
+
 function browserDeps(): OpenGateThenNavigateDeps {
   return {
     navigateTo(url) {
       window.location.assign(url);
     },
     openTab(url) {
-      return window.open(url, "_blank");
+      return openBackgroundTab(url);
     },
     afterDelay(fn, ms) {
       if (ms <= 0) {
@@ -43,6 +84,7 @@ function browserDeps(): OpenGateThenNavigateDeps {
       const id = window.setTimeout(fn, ms);
       return () => window.clearTimeout(id);
     },
+    preferContentTab: isInAppBrowser(),
   };
 }
 
@@ -58,6 +100,7 @@ function serverStubDeps(): OpenGateThenNavigateDeps {
       const id = setTimeout(fn, ms);
       return () => clearTimeout(id);
     },
+    preferContentTab: false,
   };
 }
 
@@ -87,6 +130,46 @@ function keepAdFocused(contentTab: Window) {
 
 /**
  * Reverse popunder (tab-shift):
+ * 1. Open destination (`contentUrl`) in a NEW background tab.
+ * 2. Redirect THIS tab to the ad and keep it focused.
+ *
+ * In-app browsers (Telegram, etc.): open ad externally, navigate this view to content.
+ */
+function tabShiftToAd(
+  contentUrl: string,
+  adUrl: string,
+  d: OpenGateThenNavigateDeps,
+  blockedFallback: "content" | "stay"
+): OpenGateThenNavigateResult {
+  if (d.preferContentTab) {
+    const adTab = d.openTab(adUrl);
+    d.navigateTo(contentUrl);
+    return {
+      popupLikelyBlocked: !adTab,
+      stayedOnPage: false,
+      cancel: () => {},
+    };
+  }
+
+  const contentTab = d.openTab(contentUrl);
+
+  if (!contentTab) {
+    if (blockedFallback === "content") {
+      d.navigateTo(contentUrl);
+      return { popupLikelyBlocked: true, stayedOnPage: false, cancel: () => {} };
+    }
+    return { popupLikelyBlocked: true, stayedOnPage: true, cancel: () => {} };
+  }
+
+  keepAdFocused(contentTab);
+  // One more focus pass after the browser finishes activating the new tab.
+  d.afterDelay(() => keepAdFocused(contentTab), 0);
+  d.navigateTo(adUrl);
+  return { popupLikelyBlocked: false, stayedOnPage: false, cancel: () => {} };
+}
+
+/**
+ * Reverse popunder (tab-shift):
  * 1. Open destination (`nextUrl`) in a NEW tab.
  * 2. If an ad URL is configured, redirect THIS tab to the ad (stays focused).
  * 3. If no ad URL, keep THIS tab on the page so the Adsterra popunder script
@@ -101,23 +184,16 @@ export function openGateThenNavigate(
   const adUrl = resolveAdUrl(gateUrl);
   const dest = toAbsoluteUrl(nextUrl);
 
-  const contentTab = d.openTab(dest);
-
-  if (!contentTab) {
-    // Popup blocked — fall back to same-tab navigation to the destination.
-    d.navigateTo(dest);
-    return { popupLikelyBlocked: true, stayedOnPage: false, cancel: () => {} };
+  if (!adUrl) {
+    const contentTab = d.openTab(dest);
+    if (!contentTab) {
+      d.navigateTo(dest);
+      return { popupLikelyBlocked: true, stayedOnPage: false, cancel: () => {} };
+    }
+    return { popupLikelyBlocked: false, stayedOnPage: true, cancel: () => {} };
   }
 
-  keepAdFocused(contentTab);
-
-  if (adUrl) {
-    d.navigateTo(adUrl);
-    return { popupLikelyBlocked: false, stayedOnPage: false, cancel: () => {} };
-  }
-
-  // No GATE_URL: content is in the new tab; this tab stays for the popunder script.
-  return { popupLikelyBlocked: false, stayedOnPage: true, cancel: () => {} };
+  return tabShiftToAd(dest, adUrl, d, "content");
 }
 
 /**
@@ -138,6 +214,16 @@ export function openGateThenCallback(
     return { popupLikelyBlocked: false, stayedOnPage: true, cancel: () => {} };
   }
 
+  if (d.preferContentTab) {
+    const adTab = d.openTab(adUrl);
+    callback();
+    return {
+      popupLikelyBlocked: !adTab,
+      stayedOnPage: true,
+      cancel: () => {},
+    };
+  }
+
   const contentTab = d.openTab(currentUrl);
   if (!contentTab) {
     callback();
@@ -145,6 +231,7 @@ export function openGateThenCallback(
   }
 
   keepAdFocused(contentTab);
+  d.afterDelay(() => keepAdFocused(contentTab), 0);
   d.navigateTo(adUrl);
   return { popupLikelyBlocked: false, stayedOnPage: false, cancel: () => {} };
 }
@@ -169,14 +256,17 @@ export function fireReversePopunder(
     return { popupLikelyBlocked: false, stayedOnPage: true, cancel: () => {} };
   }
 
-  const contentTab = d.openTab(contentUrl);
-  if (!contentTab) {
-    return { popupLikelyBlocked: true, stayedOnPage: true, cancel: () => {} };
+  if (d.preferContentTab) {
+    const adTab = d.openTab(adUrl);
+    // Stay on this view — content is already here; only push ad out.
+    return {
+      popupLikelyBlocked: !adTab,
+      stayedOnPage: true,
+      cancel: () => {},
+    };
   }
 
-  keepAdFocused(contentTab);
-  d.navigateTo(adUrl);
-  return { popupLikelyBlocked: false, stayedOnPage: false, cancel: () => {} };
+  return tabShiftToAd(contentUrl, adUrl, d, "stay");
 }
 
 /** Navigate this tab to `nextUrl` with no ad (quota exhausted / skip). */
