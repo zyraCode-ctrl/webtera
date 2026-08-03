@@ -23,81 +23,116 @@ function resolveNearEl(nearSelector?: string): Element | null {
   return document.body;
 }
 
+function openAdUrl(url: string): boolean {
+  try {
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (win) return true;
+  } catch {
+    /* ignore */
+  }
+  try {
+    window.location.assign(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Resolve a URL the full-page layer can open on a real user click.
- * Prefer a same-document link from a nearby ad box; fall back to the smartlink.
+ * Resolve click target for the full-page layer.
+ * Priority: nearby ad-box href → empty (caller tries DOM click) → smartlink only as last resort.
  */
 export function resolveFullPageAdHref(
   nearSelector?: string,
-  smartlink: string = funnelAdUrl
+  smartlink: string = funnelAdUrl,
+  opts?: { allowSmartlinkFallback?: boolean }
 ): string {
   const near = resolveNearEl(nearSelector);
   const fromSlot = getNearbyAdHref(pickBestNearbyAdSlot(near));
   if (fromSlot) return fromSlot;
-  return smartlink.trim();
+  if (opts?.allowSmartlinkFallback) return smartlink.trim();
+  return "";
 }
 
 /**
- * Full-viewport invisible click layer.
- * Uses a real `<a href>` so the browser navigates to the ad (works on localhost).
- * Nearby display iframes are cross-origin and cannot be clicked reliably.
+ * Fire monetization for the video-page layer under a user gesture.
+ * 1) Nearby ad click / ad href (top priority)
+ * 2) Smartlink only if nearby ad did not open
+ */
+export function fireFullPageAdClick(
+  nearSelector?: string,
+  smartlink: string = funnelAdUrl
+): "nearby" | "smartlink" | "none" {
+  const near = resolveNearEl(nearSelector);
+  const slot = pickBestNearbyAdSlot(near);
+  const nearbyHref = getNearbyAdHref(slot);
+
+  // Priority 1: open / click the nearby ad box.
+  if (nearbyHref) {
+    openAdUrl(nearbyHref);
+    return "nearby";
+  }
+  if (clickNearbyAd(near)) {
+    return "nearby";
+  }
+
+  // Priority 2: smartlink fallback.
+  const link = smartlink.trim();
+  if (link) {
+    openAdUrl(link);
+    return "smartlink";
+  }
+  return "none";
+}
+
+/**
+ * Full-viewport invisible click layer on the video help page.
+ * Ad-box click is always attempted before the smartlink.
  */
 export function FullPageAdLayer({ nearSelector, onDismiss }: Props) {
   const firedRef = useRef(false);
-  const [href, setHref] = useState(() => resolveFullPageAdHref(nearSelector));
+  const [nearbyHref, setNearbyHref] = useState(() =>
+    resolveFullPageAdHref(nearSelector, funnelAdUrl, { allowSmartlinkFallback: false })
+  );
 
   useEffect(() => {
     // Re-resolve after mount — ad boxes may finish loading a moment later.
-    const id = window.setTimeout(() => {
-      setHref(resolveFullPageAdHref(nearSelector));
-    }, 50);
-    const id2 = window.setTimeout(() => {
-      setHref(resolveFullPageAdHref(nearSelector));
-    }, 500);
+    const timers = [50, 400, 1200].map((ms) =>
+      window.setTimeout(() => {
+        setNearbyHref(
+          resolveFullPageAdHref(nearSelector, funnelAdUrl, { allowSmartlinkFallback: false })
+        );
+      }, ms)
+    );
     return () => {
-      window.clearTimeout(id);
-      window.clearTimeout(id2);
+      for (const id of timers) window.clearTimeout(id);
     };
   }, [nearSelector]);
 
-  function finish() {
+  function handleClick(e: MouseEvent<HTMLElement>) {
+    e.preventDefault();
+    e.stopPropagation();
     if (firedRef.current) return;
     firedRef.current = true;
+
+    fireFullPageAdClick(nearSelector, funnelAdUrl);
     onDismiss();
-  }
-
-  function handleClick(e: MouseEvent<HTMLAnchorElement | HTMLDivElement>) {
-    if (firedRef.current) {
-      e.preventDefault();
-      return;
-    }
-
-    // Prefer a real navigation via <a href>. If we only have a div fallback,
-    // open the smartlink / fire nearby click under this user gesture.
-    if (!href) {
-      e.preventDefault();
-      const opened = clickNearbyAd(resolveNearEl(nearSelector));
-      if (!opened && funnelAdUrl) {
-        window.open(funnelAdUrl, "_blank", "noopener,noreferrer");
-      }
-      finish();
-      return;
-    }
-
-    // Let the anchor navigate (target=_blank), then unlock the page.
-    finish();
   }
 
   const sharedClass = "fixed inset-0 z-[180] cursor-pointer bg-transparent";
 
-  if (href) {
+  // If a nearby ad exposed a real href, expose it on the anchor for middle-click / accessibility.
+  // Primary path still goes through fireFullPageAdClick (ad first, smartlink second).
+  if (nearbyHref) {
     return (
       <a
-        href={href}
+        href={nearbyHref}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Sponsor overlay — tap once to continue"
         className={sharedClass}
+        data-wt-fullpage-ad="1"
+        data-wt-ad-priority="nearby"
         onClick={handleClick}
       />
     );
@@ -109,11 +144,13 @@ export function FullPageAdLayer({ nearSelector, onDismiss }: Props) {
       tabIndex={0}
       aria-label="Sponsor overlay — tap once to continue"
       className={sharedClass}
+      data-wt-fullpage-ad="1"
+      data-wt-ad-priority="nearby-then-smartlink"
       onClick={handleClick}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          handleClick(e as unknown as MouseEvent<HTMLDivElement>);
+          handleClick(e as unknown as MouseEvent<HTMLElement>);
         }
       }}
     />

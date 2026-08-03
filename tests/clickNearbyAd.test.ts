@@ -127,7 +127,7 @@ test("clickNearbyAd: returns false when nothing clickable / visible", () => {
   assert.equal(clickNearbyAd(null, makeDoc([])), false);
 });
 
-test("clickNearbyAd: iframe-only slot falls back to host click", () => {
+test("clickNearbyAd: iframe-only host click does not count as a real ad open", () => {
   const clicks: string[] = [];
   const slot = makeSlot({
     type: "box",
@@ -136,7 +136,8 @@ test("clickNearbyAd: iframe-only slot falls back to host click", () => {
     onHostClick: () => clicks.push("host"),
   });
 
-  assert.equal(clickNearbyAd(null, makeDoc([slot])), true);
+  // Host is clicked as a best-effort, but returns false so callers can fall back to smartlink.
+  assert.equal(clickNearbyAd(null, makeDoc([slot])), false);
   assert.deepEqual(clicks, ["host"]);
 });
 

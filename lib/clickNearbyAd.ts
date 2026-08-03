@@ -124,15 +124,59 @@ export function pickBestNearbyAdSlot(
 /** Same-document click URL from a slot, if the creative exposed an anchor. */
 export function getNearbyAdHref(slot: NearbyAdSlotElement | null): string | null {
   if (!slot) return null;
-  const anchor = slot.querySelector("a[href]");
-  const href = anchor?.getAttribute("href")?.trim() ?? "";
-  return href || null;
+
+  const fromNode = (node: NearbyAdClickable | null): string | null => {
+    if (!node) return null;
+    const href = node.getAttribute("href")?.trim() ?? "";
+    if (!href || href === "#" || /^javascript:/i.test(href)) return null;
+    return href;
+  };
+
+  const direct = fromNode(slot.querySelector("a[href]"));
+  if (direct) return direct;
+
+  // Real DOM: scan all anchors (nested / sibling wrappers around iframes).
+  const el = slot as unknown as {
+    querySelectorAll?: (sel: string) => ArrayLike<NearbyAdClickable>;
+    querySelector?: (sel: string) => NearbyAdClickable | null;
+  };
+  if (typeof el.querySelectorAll === "function") {
+    const links = el.querySelectorAll("a[href]");
+    for (let i = 0; i < links.length; i++) {
+      const href = fromNode(links[i]!);
+      if (href) return href;
+    }
+  }
+
+  const iframe = el.querySelector?.("iframe") as
+    | (NearbyAdClickable & { parentElement?: NearbyAdClickable | null })
+    | null
+    | undefined;
+  const parent = iframe && "parentElement" in iframe ? iframe.parentElement : null;
+  if (parent) {
+    const parentHref = fromNode(
+      parent.getAttribute("href") != null ? parent : null
+    );
+    if (parentHref) return parentHref;
+  }
+
+  return null;
+}
+
+/**
+ * True when a loaded nearby ad slot exists (anchor and/or iframe).
+ */
+export function hasNearbyLoadedAd(
+  nearEl?: NearbyAdOrigin | null,
+  doc?: NearbyAdDocument | null
+): boolean {
+  return pickBestNearbyAdSlot(nearEl, doc) != null;
 }
 
 /**
  * Click a loaded nearby ad slot under a user gesture.
  * Prefers same-document `a[href]` (iframe interiors are cross-origin and not clickable).
- * Returns true when a click target was invoked.
+ * Returns true when a real anchor was clicked (not merely host/iframe focus).
  */
 export function clickNearbyAd(
   nearEl?: NearbyAdOrigin | null,
@@ -141,16 +185,30 @@ export function clickNearbyAd(
   const best = pickBestNearbyAdSlot(nearEl, doc);
   if (!best) return false;
 
-  const anchor = best.querySelector("a[href]");
-  if (anchor) {
-    const href = anchor.getAttribute("href")?.trim() ?? "";
-    if (href) {
+  const href = getNearbyAdHref(best);
+  if (href) {
+    const anchor = best.querySelector("a[href]");
+    // Prefer opening the resolved href so nested/scanned links still work.
+    if (anchor && (anchor.getAttribute("href")?.trim() ?? "") === href) {
       anchor.click();
       return true;
     }
+    try {
+      const a = document.createElement("a");
+      a.href = href;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      return true;
+    } catch {
+      /* fall through */
+    }
   }
 
-  // Last resort: host click (may focus an iframe; often does not open the offer).
+  // Host click may focus an iframe but usually does not open the offer.
   best.click();
-  return true;
+  return false;
 }
