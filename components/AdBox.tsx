@@ -217,10 +217,16 @@ export function AdBox({
     </div>
   );
 
+  const adAttrs = {
+    "data-wt-ad-slot": "1",
+    "data-wt-ad-type": type,
+  } as const;
+
   if (scriptSrc && isHydrated && !disabledByClient && !disabledOnLocalhost) {
     return (
       <div
         id={domId}
+        {...adAttrs}
         className={["relative", base, fallbackSize, className].filter(Boolean).join(" ")}
       >
         {showDiagnostics ? diagnosticsBadge : null}
@@ -243,6 +249,7 @@ export function AdBox({
     return (
       <div
         id={domId}
+        {...adAttrs}
         className={["relative", base, fallbackSize, className].filter(Boolean).join(" ")}
         style={{ minHeight: invoke.height }}
       >
@@ -253,6 +260,7 @@ export function AdBox({
 
   return (
     <div
+      {...adAttrs}
       className={["relative", base, fallbackSize, "grid place-items-center", className]
         .filter(Boolean)
         .join(" ")}

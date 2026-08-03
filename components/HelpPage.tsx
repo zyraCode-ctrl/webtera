@@ -11,6 +11,7 @@ import {
 import type { MouseEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { AdSlot } from "@/components/AdSlot";
+import { FullPageAdLayer } from "@/components/FullPageAdLayer";
 import { FunnelNavigatingOverlay } from "@/components/FunnelNavigatingOverlay";
 import { toolContent } from "@/data/toolContent";
 import { tools } from "@/data/tools";
@@ -20,10 +21,9 @@ import { trackEvent } from "@/lib/analytics";
 import { decodeFunnelFrom } from "@/lib/funnelRef";
 import { funnelAdUrl } from "@/lib/funnelConfig";
 import { unlockGoFullListForSession } from "@/lib/funnelGoSession";
-import { openGateThenNavigate, fireReversePopunder } from "@/lib/funnelNavigate";
+import { navigateDestinationOnly, openGateThenNavigate } from "@/lib/funnelNavigate";
 import {
   applyPopunderHandoffFromLocation,
-  consumeVideoPlayPopunder,
   withPopunderHandoff,
 } from "@/lib/funnelPopunderSession";
 import type { HelpVideoPresentation } from "@/lib/mediaApi";
@@ -56,7 +56,7 @@ function stableVideoInsertIdx(postId: string) {
 }
 
 /** In-page anchor for video funnel navigation (sticky bar scroll target). */
-const HELP_VIDEO_SECTION_ID = "help-post-video";
+export const HELP_VIDEO_SECTION_ID = "help-post-video";
 
 /** First-play gate on inline video: countdown before playback continues. */
 const HELP_PLAY_GATE_SECONDS = 5;
@@ -135,12 +135,7 @@ function HelpVideoMediaSection({
   function handleVideoPlayAttempt() {
     if (playGateCompletedRef.current) return;
 
-    // First play this journey: reverse popunder (new tab keeps help page, current → ad).
-    if (consumeVideoPlayPopunder()) {
-      fireReversePopunder(withPopunderHandoff(window.location.href, "video"));
-      return;
-    }
-
+    // Monetization is the full-page ad layer on video funnel (no popunder / nearby click here).
     setPlayGateSecondsLeft(HELP_PLAY_GATE_SECONDS);
     setPlayGateOpen(true);
   }
@@ -242,8 +237,8 @@ function HelpVideoMediaSection({
               source: from ?? undefined,
             });
             unlockGoFullListForSession();
-            // Reverse popunder: new tab → fresh /go journey, current tab → smartlink
-            openGateThenNavigate(withPopunderHandoff("/go", "reset"));
+            // Video help page: no reverse popunder — just return to /go with journey reset.
+            navigateDestinationOnly(withPopunderHandoff("/go", "reset"));
           }}
           className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-violet-600 px-4 py-3 text-sm font-medium text-white shadow-sm hover:bg-violet-500 active:scale-[0.98]"
         >
@@ -306,6 +301,7 @@ export function HelpPage({ postId, helpVideo, helpExternalLink }: Props) {
   const [guideStage, setGuideStage] = useState<GuideStage>("top");
   const [highlightActive, setHighlightActive] = useState(false);
   const [isGateNavigating, setIsGateNavigating] = useState(false);
+  const [pageAdLayerActive, setPageAdLayerActive] = useState(false);
   const cancelNavigateRef = useRef<(() => void) | null>(null);
   const pageRef = useRef<HTMLDivElement>(null);
   const postLinkCtaRef = useRef<HTMLDivElement>(null);
@@ -316,6 +312,11 @@ export function HelpPage({ postId, helpVideo, helpExternalLink }: Props) {
   useLayoutEffect(() => {
     applyPopunderHandoffFromLocation();
   }, []);
+
+  // Full-page ad layer activates on Jump to video; clear when leaving the post.
+  useEffect(() => {
+    setPageAdLayerActive(false);
+  }, [videoFunnel, postId]);
 
   // Reveal box after user has scrolled through content (download funnel legacy layout only).
   useEffect(() => {
@@ -372,7 +373,10 @@ export function HelpPage({ postId, helpVideo, helpExternalLink }: Props) {
     cancelNavigateRef.current?.();
     setIsGateNavigating(true);
 
-    const { cancel, stayedOnPage } = openGateThenNavigate(target);
+    // Video funnel: no reverse popunder on this page.
+    const { cancel, stayedOnPage } = videoFunnel
+      ? navigateDestinationOnly(target)
+      : openGateThenNavigate(target);
     cancelNavigateRef.current = cancel;
     if (stayedOnPage) {
       setIsGateNavigating(false);
@@ -381,6 +385,10 @@ export function HelpPage({ postId, helpVideo, helpExternalLink }: Props) {
 
   function handleJumpToVideo() {
     document.getElementById(HELP_VIDEO_SECTION_ID)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    // After jump: cover the page with an invisible layer bound to a nearby running ad.
+    if (videoFunnel) {
+      setPageAdLayerActive(true);
+    }
   }
 
   useEffect(() => {
@@ -468,6 +476,12 @@ export function HelpPage({ postId, helpVideo, helpExternalLink }: Props) {
 
   return (
     <div ref={pageRef} className="min-w-0 w-full space-y-6 pb-10">
+      {videoFunnel && pageAdLayerActive ? (
+        <FullPageAdLayer
+          nearSelector={`#${HELP_VIDEO_SECTION_ID}`}
+          onDismiss={() => setPageAdLayerActive(false)}
+        />
+      ) : null}
       {isGateNavigating ? (
         <FunnelNavigatingOverlay
           title="Opening your link"
@@ -480,7 +494,7 @@ export function HelpPage({ postId, helpVideo, helpExternalLink }: Props) {
             Access the resources link and download below.
           </div>
         </div>
-      ) : isFunnel && videoFunnel ? (
+      ) : isFunnel && videoFunnel && !pageAdLayerActive ? (
         <div className="sticky top-14 z-40 flex justify-center px-2">
           <button
             type="button"
