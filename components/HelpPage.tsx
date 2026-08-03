@@ -495,15 +495,18 @@ export function HelpPage({ postId, helpVideo, helpExternalLink }: Props) {
           </div>
         </div>
       ) : isFunnel && videoFunnel && !pageAdLayerActive ? (
-        <div className="sticky top-14 z-40 flex justify-center px-2">
+        <div className="sticky top-14 z-40 flex flex-col items-center px-2">
           <button
             type="button"
             onClick={handleJumpToVideo}
-            className="mt-2 inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full bg-violet-600 px-4 py-2 text-xs font-semibold text-white shadow-md ring-4 ring-violet-200/80 transition hover:bg-violet-500 sm:min-h-10 sm:px-5 sm:text-sm"
+            className="mt-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg ring-4 ring-amber-200 motion-safe:animate-pulse hover:bg-amber-400 sm:min-h-12 sm:px-6 sm:text-base"
           >
             <span aria-hidden="true">▶</span>
             Jump to video
           </button>
+          <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-800 sm:text-xs">
+            Tap to unlock video
+          </p>
         </div>
       ) : null}
 
@@ -532,6 +535,11 @@ export function HelpPage({ postId, helpVideo, helpExternalLink }: Props) {
         </section>
       )}
 
+      {/* Mobile-only: extra in-content inventory (sidebars are xl-only). */}
+      <div className="xl:hidden">
+        <AdSlot type="bannerMobile" variant="mobileSticky" />
+      </div>
+
       <AdSlot type="banner" variant="topBanner" />
 
       <section className="mx-auto w-full min-w-0 max-w-3xl space-y-4">
@@ -539,6 +547,7 @@ export function HelpPage({ postId, helpVideo, helpExternalLink }: Props) {
           const tool = tools.find((t) => t.slug === slug);
           const content = toolContent[slug];
           if (!tool || !content) return null;
+          const midMobileAdIdx = Math.floor(TOOL_SLUGS.length / 2);
 
           return (
             <div key={slug} className="space-y-4">
@@ -566,6 +575,12 @@ export function HelpPage({ postId, helpVideo, helpExternalLink }: Props) {
                   </pre>
                 </div>
               </article>
+
+              {idx === midMobileAdIdx ? (
+                <div className="xl:hidden">
+                  <AdSlot type="inline" variant="inContent" />
+                </div>
+              ) : null}
 
               {videoFunnel && idx === videoInsertAfterIdx ? (
                 <HelpVideoMediaSection

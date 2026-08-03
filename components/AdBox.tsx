@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import Script from "next/script";
 
 export type AdBoxType = "banner" | "bannerMobile" | "box" | "inline";
@@ -170,11 +170,12 @@ export function AdBox({
   const invoke = useMemo(() => resolveInvoke(type), [type]);
   const reactId = useId();
   const domId = useMemo(() => `adsterra-${reactId.replace(/:/g, "")}`, [reactId]);
-  const mounted = useRef(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [diagStatus, setDiagStatus] = useState<"idle" | "loading" | "loaded" | "error">("idle");
   const [disabledByClient, setDisabledByClient] = useState(false);
   const [disabledOnLocalhost, setDisabledOnLocalhost] = useState(false);
+  /** Bumps to remount / reload the creative on a timer. */
+  const [refreshTick, setRefreshTick] = useState(0);
 
   const showDiagnostics =
     process.env.NODE_ENV !== "production" &&
@@ -199,9 +200,12 @@ export function AdBox({
           ? "min-h-[250px] sm:min-h-[250px] max-w-[300px] mx-auto"
           : "min-h-[600px] max-w-[160px] mx-auto";
 
+  const canLoadAds =
+    isHydrated && !disabledByClient && !disabledOnLocalhost && !!(invoke || scriptSrc);
+
+  // Initial + refresh loads for invoke.js zones.
   useEffect(() => {
-    if (!isHydrated || !invoke || mounted.current || disabledByClient || disabledOnLocalhost) return;
-    mounted.current = true;
+    if (!canLoadAds || !invoke) return;
     setDiagStatus("loading");
     const el = document.getElementById(domId);
     if (el) el.innerHTML = "";
@@ -209,11 +213,24 @@ export function AdBox({
       if (!ok) setDisabledByClient(isAdRequestsBlocked());
       setDiagStatus(ok ? "loaded" : "error");
     });
-  }, [invoke, domId, isHydrated, disabledByClient, disabledOnLocalhost]);
+  }, [canLoadAds, invoke, domId, refreshTick]);
+
+  // Auto-refresh every 40s while the tab is visible (skip blocked / empty / localhost-off).
+  useEffect(() => {
+    if (!canLoadAds) return;
+    const REFRESH_MS = 40_000;
+    const id = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      if (isAdRequestsBlocked()) return;
+      setRefreshTick((n) => n + 1);
+    }, REFRESH_MS);
+    return () => window.clearInterval(id);
+  }, [canLoadAds]);
 
   const diagnosticsBadge = (
     <div className="pointer-events-none absolute left-2 top-2 z-10 rounded bg-black/80 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-white">
       {type} · {scriptSrc ? "script" : invoke ? "invoke" : "fallback"} · {diagStatus}
+      {refreshTick > 0 ? ` · r${refreshTick}` : ""}
     </div>
   );
 
@@ -225,13 +242,14 @@ export function AdBox({
   if (scriptSrc && isHydrated && !disabledByClient && !disabledOnLocalhost) {
     return (
       <div
+        key={`${domId}-wrap-${refreshTick}`}
         id={domId}
         {...adAttrs}
         className={["relative", base, fallbackSize, className].filter(Boolean).join(" ")}
       >
         {showDiagnostics ? diagnosticsBadge : null}
         <Script
-          id={`${domId}-script`}
+          id={`${domId}-script-${refreshTick}`}
           src={scriptSrc}
           strategy="afterInteractive"
           onLoad={() => setDiagStatus("loaded")}
