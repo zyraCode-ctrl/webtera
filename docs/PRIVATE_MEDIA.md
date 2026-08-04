@@ -30,15 +30,17 @@ Remove `R2_LEGACY_PUBLIC_BASE_URL` after the bucket is private and credentials w
 
 ## Bucket layout (new account)
 
-Upload videos as **flat keys** in your bucket:
+Upload videos as **flat keys** in your bucket, and thumbnails under `thumbnail/`:
 
 ```
 33.mp4
 34.mp4
 168.MP4   ← case is preserved; sync records the exact key
+thumbnail/33.jpg
+thumbnail/34.jpg
 ```
 
-Then refresh the local index:
+Then refresh the local indexes:
 
 ```bash
 npm run sync-r2
@@ -62,11 +64,16 @@ ffmpeg -i 21.mp4 -c:v libx264 -profile:v main -pix_fmt yuv420p -c:a aac -movflag
 
 Then upload `21-h264.mp4` as `21.mp4` in R2 and run `npm run sync-r2`.
 
-That writes `data/r2VideoIndex.ts` (227+ entries). Post **#33** maps to object key `33.mp4`, post **#168** to `168.MP4`, etc.
+That writes:
 
-- **Full video** (`kind=full`) — any post id listed in the index.
+- `data/r2VideoIndex.ts` — `{postId}.mp4` (and similar)
+- `data/r2ThumbIndex.ts` — `thumbnail/{postId}.jpg` (jpg/png/webp)
+
+Post **#33** maps to object key `33.mp4` and thumb `thumbnail/33.jpg`, etc.
+
+- **Full video** (`kind=full`) — any post id listed in the video index.
 - **Preview** on `/post/{id}` — only post ids in `R2_PREVIEW_POST_IDS` inside `data/mediaRegistry.ts` (default: `32`, `34`).
-- **Thumbnails** — placeholder images unless you add explicit thumb overrides.
+- **Thumbnails** — R2 objects under `thumbnail/{postId}.jpg` when indexed; otherwise a generated placeholder.
 
 Optional per-post overrides (custom paths) still go in `R2_POST_MEDIA` in `data/mediaRegistry.ts`.
 
