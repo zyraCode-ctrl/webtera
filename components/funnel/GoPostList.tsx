@@ -168,7 +168,9 @@ export function GoPostList({ posts }: { posts: Post[] }) {
     return () => window.clearTimeout(id);
   }, [query, syncQueryToUrl]);
 
-  // Fresh funnel arrival (?from_entry=1): search-only mode. After visiting a post, sessionStorage unlocks the list.
+  // Fresh funnel arrival (?from_entry=1 / q entry flag): search-only mode.
+  // Strip the one-shot entry flag with history.replaceState — router.replace soft-nav
+  // can remount this tree behind Suspense and leave the list looking blank.
   useEffect(() => {
     const listState = readGoListState(searchParams);
     if (listState.entry) {
@@ -180,7 +182,8 @@ export function GoPostList({ posts }: { posts: Post[] }) {
         page: listState.page,
       });
       const q = next.toString();
-      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+      const url = q ? `${pathname}?${q}` : pathname;
+      window.history.replaceState(window.history.state ?? {}, "", url);
       return;
     }
     try {
@@ -188,7 +191,7 @@ export function GoPostList({ posts }: { posts: Post[] }) {
     } catch {
       setShowFullPostList(false);
     }
-  }, [searchParams, pathname, router]);
+  }, [searchParams, pathname]);
 
   useEffect(() => {
     const hash = typeof window !== "undefined" ? window.location.hash : "";
@@ -265,9 +268,6 @@ export function GoPostList({ posts }: { posts: Post[] }) {
               </p>
             </div>
           ) : null}
-          <div className="mt-3 sm:mt-4">
-            <AdSlot type="banner" variant="topBanner" />
-          </div>
           <form className="mt-4 sm:mt-5" onSubmit={handleSearchSubmit}>
             <label
               htmlFor="go-post-search"
@@ -300,6 +300,18 @@ export function GoPostList({ posts }: { posts: Post[] }) {
               </div>
             </div>
           </form>
+
+          {/* Ad bars below search — separate slots so each can fill independently */}
+          <div className="mt-4 space-y-3 sm:mt-5">
+            <div className="surface-nested overflow-hidden rounded-xl p-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <AdSlot type="bannerMobile" variant="mobileSticky" className="max-w-full" />
+                <AdSlot type="bannerMobile" variant="mobileSticky" className="max-w-full" />
+                <AdSlot type="bannerMobile" variant="mobileSticky" className="max-w-full" />
+              </div>
+            </div>
+            <AdSlot type="banner" variant="bottomBanner" />
+          </div>
         </div>
 
         {normalizedQuery ? (

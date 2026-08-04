@@ -162,9 +162,12 @@ function queueInvokeLoad(
 export function AdBox({
   type = "banner",
   className,
+  compact = false,
 }: {
   type?: AdBoxType;
   className?: string;
+  /** Shorter footprint for mobile rails / constrained sidebars. */
+  compact?: boolean;
 }) {
   const scriptSrc = useMemo(() => resolveScriptSrc(type), [type]);
   const invoke = useMemo(() => resolveInvoke(type), [type]);
@@ -193,12 +196,23 @@ export function AdBox({
 
   const fallbackSize =
     type === "banner"
-      ? "h-20 sm:h-24"
+      ? compact
+        ? "h-16 sm:h-20"
+        : "h-20 sm:h-24"
       : type === "bannerMobile"
-        ? "h-[50px] max-w-[320px] mx-auto"
+        ? "h-[50px] w-full max-w-[320px] mx-auto"
         : type === "inline"
-          ? "min-h-[250px] sm:min-h-[250px] max-w-[300px] mx-auto"
-          : "min-h-[600px] max-w-[160px] mx-auto";
+          ? compact
+            ? "min-h-[180px] max-h-[220px] max-w-[300px] mx-auto"
+            : "min-h-[250px] sm:min-h-[250px] max-w-[300px] mx-auto"
+          : compact
+            ? "min-h-[200px] max-h-[280px] max-w-full mx-auto"
+            : "min-h-[600px] max-w-[160px] mx-auto";
+
+  const invokeMinHeight =
+    compact && invoke
+      ? Math.min(invoke.height, type === "box" ? 280 : type === "inline" ? 220 : invoke.height)
+      : invoke?.height;
 
   const canLoadAds =
     isHydrated && !disabledByClient && !disabledOnLocalhost && !!(invoke || scriptSrc);
@@ -215,16 +229,29 @@ export function AdBox({
     });
   }, [canLoadAds, invoke, domId, refreshTick]);
 
-  // Auto-refresh every 40s while the tab is visible (skip blocked / empty / localhost-off).
+  // Auto-refresh every 15–30s while the tab is visible (skip blocked / empty / localhost-off).
+  // Random interval per slot so all boxes do not reload at the same instant.
   useEffect(() => {
     if (!canLoadAds) return;
-    const REFRESH_MS = 40_000;
-    const id = window.setInterval(() => {
-      if (document.visibilityState !== "visible") return;
-      if (isAdRequestsBlocked()) return;
-      setRefreshTick((n) => n + 1);
-    }, REFRESH_MS);
-    return () => window.clearInterval(id);
+    let cancelled = false;
+    let timeoutId = 0;
+
+    function scheduleNext() {
+      const delayMs = 15_000 + Math.floor(Math.random() * 15_001); // 15s–30s
+      timeoutId = window.setTimeout(() => {
+        if (cancelled) return;
+        if (document.visibilityState === "visible" && !isAdRequestsBlocked()) {
+          setRefreshTick((n) => n + 1);
+        }
+        scheduleNext();
+      }, delayMs);
+    }
+
+    scheduleNext();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
   }, [canLoadAds]);
 
   const diagnosticsBadge = (
@@ -269,7 +296,7 @@ export function AdBox({
         id={domId}
         {...adAttrs}
         className={["relative", base, fallbackSize, className].filter(Boolean).join(" ")}
-        style={{ minHeight: invoke.height }}
+        style={invokeMinHeight ? { minHeight: invokeMinHeight } : undefined}
       >
         {showDiagnostics ? diagnosticsBadge : null}
       </div>

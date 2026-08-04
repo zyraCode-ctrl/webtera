@@ -10,6 +10,17 @@ const FUNNEL_ENTRY_PATH = "/VKDU7gv2CPJ/FuadqNngBkNmWt12K3k";
 
 async function gotoGoOrSkip(page: Page) {
   await page.goto(FUNNEL_ENTRY_PATH, { waitUntil: "domcontentloaded", timeout: 60_000 });
+
+  // Age gate on funnel entry — confirm 18+ before /go (Swedish CTA by default).
+  const yesAdult = page.getByRole("link", {
+    name: /över 18|above 18|insta leaks are waiting|insta-läckorna väntar|yes, i am above 18/i,
+  });
+  if (await yesAdult.isVisible().catch(() => false)) {
+    await yesAdult.click();
+    await expect(page.getByText(/insta leaks are loading/i)).toBeVisible({ timeout: 5_000 });
+    await page.waitForURL(/\/go/, { timeout: 30_000 });
+  }
+
   if (!page.url().includes("/go")) {
     test.skip(
       true,

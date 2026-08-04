@@ -2,8 +2,8 @@ import Link from "next/link";
 
 export function Footer() {
   return (
-    <footer className="mt-8 w-full min-w-0 border-t border-violet-200/55 bg-white/70 py-1 shadow-[0_-8px_28px_rgb(109_40_217_/0.06)] backdrop-blur-md">
-      <div className="flex w-full min-w-0 flex-col gap-4 py-6 text-sm text-zinc-600 sm:flex-row sm:items-center sm:justify-between">
+    <footer className="mt-6 w-full min-w-0 border-t border-violet-200/55 bg-white/70 py-1 shadow-[0_-8px_28px_rgb(109_40_217_/0.06)] backdrop-blur-md sm:mt-8">
+      <div className="flex w-full min-w-0 flex-col gap-4 py-5 text-sm text-zinc-600 sm:flex-row sm:items-center sm:justify-between sm:py-6">
         <div>
           <div className="bg-gradient-to-r from-violet-700 via-fuchsia-600 to-cyan-600 bg-clip-text font-medium text-transparent">
             WebTera Tools

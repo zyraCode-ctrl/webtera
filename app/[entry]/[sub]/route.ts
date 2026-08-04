@@ -9,7 +9,7 @@ type Entry = {
 };
 
 // 2-part funnel entry links. Visiting any of these sets a short-lived cookie
-// and redirects the user to `/go`.
+// and shows an age gate; confirming 18+ continues to `/go`.
 const FUNNEL_ENTRIES: Entry[] = [
   { entry: "VKDU7gv2CPJ", sub: "FuadqNngBkNmWt12K3k", src: "a" },
   { entry: "HXz4R4jTGqhx", sub: "ZZywMTrDZt7JC1mY9q", src: "b" },

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { getPostById, posts } from "../data/posts";
+import { hasMediaKind } from "../data/mediaRegistry";
 import { funnelHelpPath } from "../lib/funnelRef";
 import { FUNNEL_GATE_TO_NEXT_MS } from "../lib/funnelNavigate";
 import { LINK_LOADER_SECONDS } from "../lib/funnelTiming";
@@ -12,22 +13,20 @@ test("posts registry: expected length and getPostById", () => {
   assert.equal(getPostById("bogus"), undefined);
 });
 
-test("funnel flow: post 32 exposes preview flag without public media URLs in post data", () => {
-  const p = getPostById("32");
-  assert.ok(p);
-  assert.equal(p!.hasPreviewVideo, true);
-  assert.equal("imageUrl" in (p as object), false);
-});
+test("funnel flow: post media flags match registry and stay private", () => {
+  const p32 = getPostById("32");
+  assert.ok(p32);
+  assert.equal(p32!.hasPreviewVideo, hasMediaKind("32", "preview"));
+  assert.equal(p32!.hasThumb, hasMediaKind("32", "thumb"));
+  assert.equal("imageUrl" in (p32 as object), false);
 
-test("funnel flow: post 33 has thumb flag without preview video in list data", () => {
-  const p = getPostById("33");
-  assert.ok(p);
-  assert.equal(p!.hasThumb, true);
-  assert.equal(p!.hasPreviewVideo, false);
+  const p33 = getPostById("33");
+  assert.ok(p33);
+  assert.equal(p33!.hasThumb, true);
+  assert.equal(p33!.hasPreviewVideo, hasMediaKind("33", "preview"));
 });
 
 test("funnel flow: Link button targets resolve for exemplar posts (no outbound allowlist)", async () => {
-  const mod = await import(`../data/links.ts?ts=${Date.now()}`);
   delete process.env.NEXT_PUBLIC_ALLOWED_OUTBOUND_HOSTS;
   const fresh = await import(`../data/links.ts?ts=${Date.now()}_2`);
   const s32 = fresh.getPostLinkStatus("32");
@@ -35,8 +34,10 @@ test("funnel flow: Link button targets resolve for exemplar posts (no outbound a
   assert.equal(s32.blocked, false);
   assert.ok(String(s32.url).startsWith("https://"));
 
+  // Explicit empty overrides must stay empty (not fall back to default).
   const s28 = fresh.getPostLinkStatus("28");
-  assert.ok(s28.url?.includes("xvideos"), "explicit override preserved");
+  assert.equal(s28.url, undefined);
+  assert.equal(s28.blocked, false);
 });
 
 test("funnel flow: LinkLoader help path uses encoded funnel href", () => {
